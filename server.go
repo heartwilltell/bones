@@ -1,4 +1,4 @@
-package httpserver
+package bones
 
 import (
 	"context"
@@ -7,13 +7,14 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/heartwilltell/bones/server"
-
 	"github.com/VictoriaMetrics/metrics"
 	"github.com/go-chi/chi/v5"
 	"github.com/heartwilltell/hc"
 	"github.com/heartwilltell/log"
 )
+
+// Middleware represents an HTTP server middleware.
+type Middleware = func(next http.Handler) http.Handler
 
 const (
 	// readTimeout represents default read timeout for the http.Server.
@@ -36,15 +37,7 @@ type Server struct {
 	log    log.Logger
 	router chi.Router
 	server *http.Server
-
-	settings struct {
-		healthCheckDisabled               bool
-		healthCheckAccessLogsEnabled      bool
-		healthCheckEndpointMetricsEnabled bool
-		metricsDisabled                   bool
-		metricsAccessLogsEnabled          bool
-		metricsEndpointMetricsEnabled     bool
-	}
+	config serverConfig
 }
 
 // New return a new instance of Server struct.
@@ -63,6 +56,8 @@ func New(addr string, options ...Option) (*Server, error) {
 			WriteTimeout: writeTimeout,
 			IdleTimeout:  idleTimeout,
 		},
+
+		config: defaultConfig(),
 	}
 
 	// Apply all server options to the Server struct.
@@ -70,27 +65,15 @@ func New(addr string, options ...Option) (*Server, error) {
 		opt(&s)
 	}
 
-	s.setup()
+	if err := s.applyConfig(); err != nil {
+		return nil, fmt.Errorf("failed to apply server cofiguration: %w", err)
+	}
 
 	return &s, nil
 }
 
 func (s *Server) Mount(route string, handler http.Handler, middlewares ...Middleware) {
 	s.router.Route(route, func(r chi.Router) {
-		r.Use(middlewares...)
-		r.Mount("/", handler)
-	})
-}
-
-func (s *Server) RedeclareMetricsEndpoint(handler http.Handler, middlewares ...Middleware) {
-	s.router.Route("/metrics", func(r chi.Router) {
-		r.Use(middlewares...)
-		r.Mount("/", handler)
-	})
-}
-
-func (s *Server) RedeclareHealthEndpoint(handler http.Handler, middlewares ...Middleware) {
-	s.router.Route("/health", func(r chi.Router) {
 		r.Use(middlewares...)
 		r.Mount("/", handler)
 	})
@@ -118,7 +101,7 @@ func (s *Server) healthCheck(w http.ResponseWriter, r *http.Request) {
 // Serve listen to incoming connections and serves each request.
 func (s *Server) Serve(ctx context.Context) error {
 	if s.server.Addr == "" {
-		return server.ErrInvalidAddress
+		return ErrInvalidAddress
 	}
 
 	// handle shutdown signal in the background
@@ -155,44 +138,3 @@ func (s *Server) handleShutdown(ctx context.Context) {
 		panic(err)
 	}
 }
-
-func (s *Server) setup() {
-	s.setupHealthEndpoint()
-	s.setupMetricsEndpoint()
-}
-
-func (s *Server) setupHealthEndpoint() {
-	if !s.settings.healthCheckDisabled {
-		s.router.Group(func(r chi.Router) {
-			if s.settings.healthCheckAccessLogsEnabled {
-				r.Use(LoggingMiddleware(s.log))
-			}
-
-			if s.settings.healthCheckEndpointMetricsEnabled {
-				r.Use(MetricsMiddleware())
-			}
-
-			r.Head("/health", s.healthCheck)
-			r.Get("/health", s.healthCheck)
-		})
-	}
-}
-
-func (s *Server) setupMetricsEndpoint() {
-	if !s.settings.metricsDisabled {
-		s.router.Group(func(r chi.Router) {
-			if s.settings.metricsAccessLogsEnabled {
-				r.Use(LoggingMiddleware(s.log))
-			}
-
-			if s.settings.metricsEndpointMetricsEnabled {
-				r.Use(MetricsMiddleware())
-			}
-
-			r.Get("/metrics", s.metrics)
-		})
-	}
-}
-
-// Middleware represents an HTTP server middleware.
-type Middleware = func(next http.Handler) http.Handler

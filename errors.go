@@ -1,4 +1,4 @@
-package server
+package bones
 
 // This is compiling time check for interface implementation.
 var _ error = (Error)("")

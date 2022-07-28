@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/VictoriaMetrics/metrics v1.18.1
 	github.com/go-chi/chi/v5 v5.0.7
-	github.com/heartwilltell/hc v0.1.4
+	github.com/heartwilltell/hc v0.1.5
 	github.com/heartwilltell/log v1.1.0
 	github.com/jackc/pgconn v1.12.1
 	github.com/jackc/pgx/v4 v4.16.1

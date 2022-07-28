@@ -102,6 +102,8 @@ github.com/grpc-ecosystem/grpc-gateway v1.16.0/go.mod h1:BDjrQk3hbvj6Nolgz8mAMFb
 github.com/hashicorp/hcl v1.0.0/go.mod h1:E5yfLk+7swimpb2L/Alb/PJmXilQ/rhwaUYs4T20WEQ=
 github.com/heartwilltell/hc v0.1.4 h1:hS65ucga7ouhfNkDhsZ8KDWZrw1BH0K/TOFHbL8Th48=
 github.com/heartwilltell/hc v0.1.4/go.mod h1:R7ohgpTqmkHDmcBfz4CcK3XDMdy1PLFmTaPtAC4yDEE=
+github.com/heartwilltell/hc v0.1.5 h1:8GX2jJ1i2xI3Mi+ClL/jdbDpCjkWVf3o+7QZ7hronmg=
+github.com/heartwilltell/hc v0.1.5/go.mod h1:R7ohgpTqmkHDmcBfz4CcK3XDMdy1PLFmTaPtAC4yDEE=
 github.com/heartwilltell/log v1.1.0 h1:wzsAmP+6as4EFGAPTpe4xlGf4JIvsvXwavoLDwLfHxE=
 github.com/heartwilltell/log v1.1.0/go.mod h1:k0MGTLtbsVg0hwQr4bSqpBOQ9NBy+5vhzIfhgoDrg0o=
 github.com/huandu/xstrings v1.3.2 h1:L18LIDzqlW6xN2rEkpdV8+oL/IXWJ1APd+vsdYy4Wdw=
