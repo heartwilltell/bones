@@ -10,31 +10,27 @@ import (
 type key string
 
 const (
-	// ErrorLogHook represents key for context by which
+	// errorLogHook represents key for context by which
 	// the error log hook can be received from the context.
-	ErrorLogHook key = "ctx.error-log-hook"
+	errorLogHook key = "ctx.error-log-hook"
 
-	// ServiceTx represents key for context by which
+	// serviceTx represents key for context by which
 	// the service transaction can be received from the context.
-	ServiceTx key = "ctx.service-tx"
+	serviceTx key = "ctx.service-tx"
 
-	// RequestID  represents key for context by which
+	// requestID  represents key for context by which
 	// the request ID can be received from the context.
-	RequestID key = "ctx.request-id"
-
-	// CFRequestID represents key for context by which
-	// the request ID can be received from the context.
-	CFRequestID key = "ctx.cloudflare-request-id"
+	requestID key = "ctx.request-id"
 )
 
 // SetErrorLogHook sets the error log hook to the context.
-func SetErrorLogHook(ctx context.Context, hookedErr error) context.Context {
-	return context.WithValue(ctx, ErrorLogHook, func(err error) { hookedErr = err })
+func SetErrorLogHook(ctx context.Context, hook func(err error)) context.Context {
+	return context.WithValue(ctx, errorLogHook, hook)
 }
 
 // GetErrorLogHook gets the error log hook to the context.
 func GetErrorLogHook(ctx context.Context) (func(err error), bool) {
-	if hook, ok := ctx.Value(ErrorLogHook).(func(error)); ok {
+	if hook, ok := ctx.Value(errorLogHook).(func(error)); ok {
 		return hook, true
 	}
 
@@ -43,12 +39,12 @@ func GetErrorLogHook(ctx context.Context) (func(err error), bool) {
 
 // SetServiceTx sets the service transaction to the context.
 func SetServiceTx(ctx context.Context, tx db.Tx) context.Context {
-	return context.WithValue(ctx, ServiceTx, tx)
+	return context.WithValue(ctx, serviceTx, tx)
 }
 
 // GetServiceTx gets the service transaction from the context.
 func GetServiceTx(ctx context.Context) (db.Tx, bool) {
-	if tx, ok := ctx.Value(ServiceTx).(db.Tx); ok {
+	if tx, ok := ctx.Value(serviceTx).(db.Tx); ok {
 		return tx, true
 	}
 
@@ -57,26 +53,12 @@ func GetServiceTx(ctx context.Context) (db.Tx, bool) {
 
 // SetRequestID sets the request ID to the context.
 func SetRequestID(ctx context.Context, id string) context.Context {
-	return context.WithValue(ctx, RequestID, id)
+	return context.WithValue(ctx, requestID, id)
 }
 
 // GetRequestID gets the request ID from the context.
 func GetRequestID(ctx context.Context) (string, bool) {
-	if id, ok := ctx.Value(RequestID).(string); ok {
-		return id, true
-	}
-
-	return "", false
-}
-
-// SetCFRequestID sets the Cloudflare request ID to the context.
-func SetCFRequestID(ctx context.Context, id string) context.Context {
-	return context.WithValue(ctx, CFRequestID, id)
-}
-
-// GetCFRequestID gets the Cloudflare request ID from the context.
-func GetCFRequestID(ctx context.Context) (string, bool) {
-	if id, ok := ctx.Value(CFRequestID).(string); ok {
+	if id, ok := ctx.Value(requestID).(string); ok {
 		return id, true
 	}
 

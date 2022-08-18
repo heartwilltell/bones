@@ -67,6 +67,18 @@ func (c *Conn) Do(ctx context.Context, f func(ctx context.Context) error) (doErr
 	return nil
 }
 
+// DeferredRollback is used to
+func (c *Conn) DeferredRollback(ctx context.Context, tx pgx.Tx, namedErr error) {
+	if err := tx.Rollback(ctx); err != nil && !errors.Is(err, pgx.ErrTxClosed) {
+		if namedErr != nil {
+			namedErr = stackErrors(namedErr, fmt.Errorf("failed to rollback transaction: %w", err))
+			return
+		}
+
+		namedErr = fmt.Errorf("failed to rollback transaction: %w", err)
+	}
+}
+
 func (c *Conn) Health(ctx context.Context) error {
 	if err := c.Ping(ctx); err != nil {
 		return fmt.Errorf("postgres: healthcheck failed: %w", err)

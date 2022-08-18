@@ -21,7 +21,7 @@ func LoggingMiddleware(log log.Logger) bones.Middleware {
 
 			var hookedError error
 
-			ctx := ctxutil.SetErrorLogHook(r.Context(), hookedError)
+			ctx := ctxutil.SetErrorLogHook(r.Context(), func(err error) { hookedError = err })
 			rid := ctx.Value(middleware.RequestIDKey)
 
 			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)

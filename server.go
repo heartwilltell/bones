@@ -9,6 +9,7 @@ import (
 
 	"github.com/VictoriaMetrics/metrics"
 	"github.com/go-chi/chi/v5"
+	"github.com/heartwilltell/bones/respond"
 	"github.com/heartwilltell/hc"
 	"github.com/heartwilltell/log"
 )
@@ -19,6 +20,9 @@ type Middleware = func(next http.Handler) http.Handler
 const (
 	// readTimeout represents default read timeout for the http.Server.
 	readTimeout = 2 * time.Second
+
+	// readHeaderTimeout represents default read header timeout for http.Server.
+	readHeaderTimeout = 5 * time.Second
 
 	// writeTimeout represents default write timeout for the http.Server.
 	writeTimeout = 3 * time.Second
@@ -46,15 +50,16 @@ func New(addr string, options ...Option) (*Server, error) {
 
 	s := Server{
 		log: log.NewNopLog(),
-		hc:  nil,
+		hc:  hc.NewNopChecker(),
 
 		router: router,
 		server: &http.Server{
-			Addr:         addr,
-			Handler:      router,
-			ReadTimeout:  readTimeout,
-			WriteTimeout: writeTimeout,
-			IdleTimeout:  idleTimeout,
+			Addr:              addr,
+			Handler:           router,
+			ReadHeaderTimeout: readHeaderTimeout,
+			ReadTimeout:       readTimeout,
+			WriteTimeout:      writeTimeout,
+			IdleTimeout:       idleTimeout,
 		},
 
 		config: defaultConfig(),
@@ -79,29 +84,10 @@ func (s *Server) Mount(route string, handler http.Handler, middlewares ...Middle
 	})
 }
 
-func (s *Server) metrics(w http.ResponseWriter, _ *http.Request) {
-	metrics.WritePrometheus(w, true)
-}
-
-func (s *Server) healthCheck(w http.ResponseWriter, r *http.Request) {
-	if s.hc == nil {
-		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		w.WriteHeader(http.StatusOK)
-	}
-
-	if err := s.hc.Health(r.Context()); err != nil {
-		http.Error(w, http.StatusText(http.StatusServiceUnavailable), http.StatusServiceUnavailable)
-		return
-	}
-
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-}
-
 // Serve listen to incoming connections and serves each request.
 func (s *Server) Serve(ctx context.Context) error {
 	if s.server.Addr == "" {
-		return ErrInvalidAddress
+		return errInvalidAddress
 	}
 
 	// handle shutdown signal in the background
@@ -116,6 +102,45 @@ func (s *Server) Serve(ctx context.Context) error {
 	s.log.Info("Bye!")
 
 	return nil
+}
+
+func (s *Server) ServeTLS(ctx context.Context, cert, key string) error {
+	if s.server.Addr == "" {
+		return errInvalidAddress
+	}
+
+	// handle shutdown signal in the background
+	go s.handleShutdown(ctx)
+
+	s.log.Info("Server started to listen on: %s", s.server.Addr)
+
+	if err := s.server.ListenAndServeTLS(cert, key); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		return fmt.Errorf("server failed: %w", err)
+	}
+
+	s.log.Info("Bye!")
+
+	return nil
+}
+
+func (s *Server) metrics(w http.ResponseWriter, _ *http.Request) {
+	metrics.WritePrometheus(w, true)
+}
+
+func (s *Server) healthCheck(w http.ResponseWriter, r *http.Request) {
+	if s.hc == nil {
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	if err := s.hc.Health(r.Context()); err != nil {
+		respond.Error(w, r, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
 }
 
 // handleShutdown blocks until select statement receives a signal from
