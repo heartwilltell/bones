@@ -87,7 +87,7 @@ func (s *Server) Mount(route string, handler http.Handler, middlewares ...Middle
 // Serve listen to incoming connections and serves each request.
 func (s *Server) Serve(ctx context.Context) error {
 	if s.server.Addr == "" {
-		return errInvalidAddress
+		return fmt.Errorf("invalid server address: %s", s.server.Addr)
 	}
 
 	// handle shutdown signal in the background
@@ -106,7 +106,7 @@ func (s *Server) Serve(ctx context.Context) error {
 
 func (s *Server) ServeTLS(ctx context.Context, cert, key string) error {
 	if s.server.Addr == "" {
-		return errInvalidAddress
+		return fmt.Errorf("invalid server address: %s", s.server.Addr)
 	}
 
 	// handle shutdown signal in the background
@@ -129,8 +129,7 @@ func (s *Server) metrics(w http.ResponseWriter, _ *http.Request) {
 
 func (s *Server) healthCheck(w http.ResponseWriter, r *http.Request) {
 	if s.hc == nil {
-		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		w.WriteHeader(http.StatusOK)
+		respond.TEXT(w, r, http.StatusOK, nil)
 		return
 	}
 
@@ -139,8 +138,7 @@ func (s *Server) healthCheck(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
+	respond.TEXT(w, r, http.StatusOK, nil)
 }
 
 // handleShutdown blocks until select statement receives a signal from

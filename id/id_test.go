@@ -2,6 +2,8 @@ package id
 
 import (
 	"testing"
+	"unicode"
+	"unicode/utf8"
 )
 
 func TestULID(t *testing.T) {
@@ -32,95 +34,37 @@ func TestValidateULID(t *testing.T) {
 func TestDigiCode(t *testing.T) {
 	t.Run("DigiCode", func(t *testing.T) {
 		got := DigiCode()
-		t.Log(got)
+		if len(got) != 6 || utf8.RuneCountInString(got) != 6 {
+			t.Errorf("invalid digicode length: %d", len(got))
+		}
+
+		for _, r := range got {
+			if !unicode.IsNumber(r) {
+				t.Errorf("digicode contains char which is not a number: %s", string(r))
+			}
+		}
 	})
 }
 
-func TestError_Error(t *testing.T) {
-	tests := []struct {
-		name string
-		e    Error
-		want string
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.e.Error(); got != tt.want {
-				t.Errorf("Error() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
+func TestValidateDigiCode(t *testing.T) {
+	t.Run("Valid", func(t *testing.T) {
+		code := DigiCode()
+		if err := ValidateDigiCode(code); err != nil {
+			t.Errorf("digicode should be valid but its not: %v", err)
+		}
+	})
 
-func TestULID1(t *testing.T) {
-	tests := []struct {
-		name string
-		want string
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := ULID(); got != tt.want {
-				t.Errorf("ULID() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
+	t.Run("Error len", func(t *testing.T) {
+		id := "65789"
+		if err := ValidateDigiCode(id); err == nil || err != ErrInvalidID {
+			t.Errorf("digicode should not be valid. Expected ErrInvalidID")
+		}
+	})
 
-func TestValidateULID1(t *testing.T) {
-	type args struct {
-		id string
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if err := ValidateULID(tt.args.id); (err != nil) != tt.wantErr {
-				t.Errorf("ValidateULID() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func TestValidateXID(t *testing.T) {
-	type args struct {
-		id string
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if err := ValidateXID(tt.args.id); (err != nil) != tt.wantErr {
-				t.Errorf("ValidateXID() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func TestXID(t *testing.T) {
-	tests := []struct {
-		name string
-		want string
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := XID(); got != tt.want {
-				t.Errorf("XID() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+	t.Run("Error invalid char", func(t *testing.T) {
+		id := "65789C"
+		if err := ValidateDigiCode(id); err == nil || err != ErrInvalidID {
+			t.Errorf("digicode should not be valid. Expected ErrInvalidID")
+		}
+	})
 }

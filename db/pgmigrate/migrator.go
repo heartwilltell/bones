@@ -79,9 +79,3 @@ func (m *migrationsFS) ReadDir(dirname string) ([]os.FileInfo, error) {
 
 	return infos, nil
 }
-
-// Error implements builtin error interface and represents package level errors
-// related to work of Migrator type.
-type Error string
-
-func (e Error) Error() string { return string(e) }

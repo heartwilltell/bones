@@ -1,17 +1,16 @@
-package middlewares
+package mw
 
 import (
 	"net/http"
 	"time"
 
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/heartwilltell/bones"
 	"github.com/heartwilltell/bones/ctxutil"
 	"github.com/heartwilltell/log"
 )
 
 // LoggingMiddleware represents logging middleware.
-func LoggingMiddleware(log log.Logger) bones.Middleware {
+func LoggingMiddleware(log log.Logger) Middleware {
 	format := "%s %d %s Remote: %s %s Request ID: %s"
 	errFormat := format + " Error: %s"
 
@@ -21,8 +20,8 @@ func LoggingMiddleware(log log.Logger) bones.Middleware {
 
 			var hookedError error
 
-			ctx := ctxutil.SetErrorLogHook(r.Context(), func(err error) { hookedError = err })
-			rid := ctx.Value(middleware.RequestIDKey)
+			ctx := ctxutil.Set(r.Context(), ctxutil.ErrorLogHook, func(err error) { hookedError = err })
+			rid := ctxutil.Get(ctx, ctxutil.RequestID)
 
 			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
 			next.ServeHTTP(ww, r.WithContext(ctx))

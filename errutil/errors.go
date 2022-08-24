@@ -1,4 +1,4 @@
-package bones
+package errutil
 
 // This is compiling time check for interface implementation.
 var _ error = (Error)("")
@@ -29,13 +29,6 @@ const (
 	// ErrUnavailable indicates that the service is currently unavailable.
 	// This kind of error is retryable. Caller should retry with a backoff.
 	ErrUnavailable Error = "temporarily unavailable"
-)
-
-// Enumeration of unexported (internal) errors.
-// Mostly used to describe server failures.
-const (
-	// errInvalidAddress indicates that Server address is empty or invalid.
-	errInvalidAddress Error = "invalid server address"
 )
 
 // Error type represents package level errors.

@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/oklog/ulid/v2"
 	"github.com/rs/xid"
@@ -24,7 +26,7 @@ const (
 // More about ULID: https://github.com/ulid/spec
 func ULID() string {
 	t := time.Now().UTC()
-	e := ulid.Monotonic(rand.New(rand.NewSource(t.UnixNano())), 0) // nolint:gosec
+	e := ulid.Monotonic(rand.New(rand.NewSource(t.UnixNano())), 0) //nolint:gosec
 	id := ulid.MustNew(ulid.Timestamp(t), e)
 
 	return id.String()
@@ -43,8 +45,7 @@ func ValidateULID(id string) error {
 // XID returns short unique identifier as string.
 func XID() string { return strings.ToUpper(xid.New().String()) }
 
-// ValidateXID validates string representation
-// of XID identifier.
+// ValidateXID validates string representation of XID identifier.
 func ValidateXID(id string) error {
 	if _, err := xid.FromString(id); err != nil {
 		return ErrInvalidID
@@ -54,7 +55,6 @@ func ValidateXID(id string) error {
 }
 
 // DigiCode returns 6-digit code as a string.
-// Can throw a panic!
 func DigiCode() string {
 	const (
 		maxN    = 9
@@ -62,7 +62,6 @@ func DigiCode() string {
 	)
 
 	var rng fastrand.RNG
-
 	rng.Seed(uint32(time.Now().UnixNano()))
 
 	var b strings.Builder
@@ -72,6 +71,21 @@ func DigiCode() string {
 	}
 
 	return b.String()
+}
+
+// ValidateDigiCode validates code from DigiCode.
+func ValidateDigiCode(code string) error {
+	if len(code) != 6 || utf8.RuneCountInString(code) != 6 {
+		return ErrInvalidID
+	}
+
+	for _, r := range code {
+		if !unicode.IsNumber(r) {
+			return ErrInvalidID
+		}
+	}
+
+	return nil
 }
 
 // Error represents package level error.

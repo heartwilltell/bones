@@ -1,17 +1,16 @@
-package middlewares
+package mw
 
 import (
 	"fmt"
 	"net/http"
 
 	"github.com/VictoriaMetrics/metrics"
-	"github.com/heartwilltell/bones"
 	"github.com/heartwilltell/log"
 )
 
-// RecoveryMiddleware represents middlewares which catches and recovers from panics
+// RecoveryMiddleware represents mw which catches and recovers from panics
 // Returns the HTTP 500 (Internal Server Error) status if possible.
-func RecoveryMiddleware(log log.Logger) bones.Middleware {
+func RecoveryMiddleware(log log.Logger) Middleware {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			defer func() {

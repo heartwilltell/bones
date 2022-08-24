@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/heartwilltell/bones/middlewares"
+	"github.com/heartwilltell/bones/middleware"
 	"github.com/heartwilltell/log"
 )
 
@@ -20,7 +20,7 @@ type Option func(server *Server)
 // WithLogger sets the server logger.
 func WithLogger(l log.Logger) Option { return func(s *Server) { s.log = l } }
 
-// WithMiddlewares sets given middlewares as router wide middlewares.
+// WithMiddlewares sets given mw as router wide mw.
 func WithMiddlewares(m ...Middleware) Option { return func(s *Server) { s.router.Use(m...) } }
 
 // WithReadTimeout sets the http.Server ReadTimeout.
@@ -94,11 +94,11 @@ func (s *Server) applyConfig() error {
 
 		s.router.Group(func(g chi.Router) {
 			if s.config.hc.accessLogsEnabled {
-				g.Use(middlewares.LoggingMiddleware(s.log))
+				g.Use(mw.LoggingMiddleware(s.log))
 			}
 
 			if s.config.hc.metricsForEndpointEnabled {
-				g.Use(middlewares.MetricsMiddleware())
+				g.Use(mw.MetricsMiddleware())
 			}
 
 			g.Get(s.config.hc.route, s.healthCheck)
@@ -116,11 +116,11 @@ func (s *Server) applyConfig() error {
 
 		s.router.Group(func(g chi.Router) {
 			if s.config.metrics.accessLogsEnabled {
-				g.Use(middlewares.LoggingMiddleware(s.log))
+				g.Use(mw.LoggingMiddleware(s.log))
 			}
 
 			if s.config.metrics.metricsForEndpointEnabled {
-				g.Use(middlewares.MetricsMiddleware())
+				g.Use(mw.MetricsMiddleware())
 			}
 
 			g.Get(s.config.metrics.route, s.metrics)
@@ -130,7 +130,7 @@ func (s *Server) applyConfig() error {
 	if s.config.profiler.enable {
 		s.router.Group(func(g chi.Router) {
 			if s.config.profiler.accessLogsEnabled {
-				g.Use(middlewares.LoggingMiddleware(s.log))
+				g.Use(mw.LoggingMiddleware(s.log))
 			}
 
 			g.Route("/debug/pprof", func(profiler chi.Router) {

@@ -1,4 +1,4 @@
-package middlewares
+package mw
 
 import (
 	"fmt"
@@ -7,11 +7,10 @@ import (
 
 	"github.com/VictoriaMetrics/metrics"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/heartwilltell/bones"
 )
 
-// MetricsMiddleware represents HTTP metrics collecting middlewares.
-func MetricsMiddleware() bones.Middleware {
+// MetricsMiddleware represents HTTP metrics collecting mw.
+func MetricsMiddleware() Middleware {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()
