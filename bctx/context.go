@@ -1,16 +1,8 @@
-package ctxutil
+package bctx
 
 import (
 	"context"
 )
-
-// key represents a context key with custom type.
-type key string
-
-// value represents generic constraint for context value type.
-type value interface {
-	func(error) | string
-}
 
 const (
 	// ErrorLogHook represents a key for context by which
@@ -22,14 +14,29 @@ const (
 	RequestID key = "ctx.request-id"
 )
 
+type (
+	// key represents a context key with custom type.
+	key string
+
+	// value represents generic constraint for context value type.
+	value interface{ func(error) | string }
+)
+
+// Get gets value from context by context key.
+// If searched values is absent in context, then
+// zero value of specified type wil be returned.
 func Get[T value](ctx context.Context, k key) T {
 	if v, ok := ctx.Value(k).(T); ok {
 		return v
 	}
 
-	return nil
+	return zero[T]()
 }
 
+// Set sets given value to context by specified key.
 func Set[T value](ctx context.Context, k key, v T) context.Context {
 	return context.WithValue(ctx, k, v)
 }
+
+// zero returns zero value for specified type.
+func zero[T value]() T { var z T; return z }

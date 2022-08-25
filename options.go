@@ -88,17 +88,17 @@ func (s *Server) applyConfig() error {
 			return fmt.Errorf("empty healt-check route")
 		}
 
-		if !strings.HasPrefix("/", s.config.hc.route) {
+		if !strings.HasPrefix(s.config.hc.route, "/") {
 			return fmt.Errorf("invalid healt-check route: %s (route should start with '/' slash)", s.config.hc.route)
 		}
 
 		s.router.Group(func(g chi.Router) {
 			if s.config.hc.accessLogsEnabled {
-				g.Use(mw.LoggingMiddleware(s.log))
+				g.Use(middleware.LoggingMiddleware(s.log))
 			}
 
 			if s.config.hc.metricsForEndpointEnabled {
-				g.Use(mw.MetricsMiddleware())
+				g.Use(middleware.MetricsMiddleware())
 			}
 
 			g.Get(s.config.hc.route, s.healthCheck)
@@ -110,17 +110,17 @@ func (s *Server) applyConfig() error {
 			return fmt.Errorf("empty metrics route")
 		}
 
-		if !strings.HasPrefix("/", s.config.metrics.route) {
+		if !strings.HasPrefix(s.config.metrics.route, "/") {
 			return fmt.Errorf("invalid metrics route: %s (route should start with '/' slash)", s.config.metrics.route)
 		}
 
 		s.router.Group(func(g chi.Router) {
 			if s.config.metrics.accessLogsEnabled {
-				g.Use(mw.LoggingMiddleware(s.log))
+				g.Use(middleware.LoggingMiddleware(s.log))
 			}
 
 			if s.config.metrics.metricsForEndpointEnabled {
-				g.Use(mw.MetricsMiddleware())
+				g.Use(middleware.MetricsMiddleware())
 			}
 
 			g.Get(s.config.metrics.route, s.metrics)
@@ -130,7 +130,7 @@ func (s *Server) applyConfig() error {
 	if s.config.profiler.enable {
 		s.router.Group(func(g chi.Router) {
 			if s.config.profiler.accessLogsEnabled {
-				g.Use(mw.LoggingMiddleware(s.log))
+				g.Use(middleware.LoggingMiddleware(s.log))
 			}
 
 			g.Route("/debug/pprof", func(profiler chi.Router) {

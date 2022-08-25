@@ -5,8 +5,8 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/heartwilltell/bones/ctxutil"
-	"github.com/heartwilltell/bones/errutil"
+	"github.com/heartwilltell/bones/bctx"
+	"github.com/heartwilltell/bones/berr"
 )
 
 // Error tries to map err to bones.Error and based on result
@@ -14,41 +14,41 @@ import (
 func Error(w http.ResponseWriter, r *http.Request, err error) {
 	// Get log hook from the context to set an error which
 	// will be logged along with access log line.
-	if hook := ctxutil.Get(r.Context(), ctxutil.ErrorLogHook); hook != nil {
+	if hook := bctx.Get[func(error)](r.Context(), bctx.ErrorLogHook); hook != nil {
 		hook(err)
 	}
 
-	if errors.Is(err, errutil.ErrAlreadyExists) {
+	if errors.Is(err, berr.ErrAlreadyExists) {
 		http.Error(w, http.StatusText(http.StatusConflict), http.StatusConflict)
 		return
 	}
 
-	if errors.Is(err, errutil.ErrNotFound) {
+	if errors.Is(err, berr.ErrNotFound) {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
 
-	if errors.Is(err, errutil.ErrUnauthenticated) {
+	if errors.Is(err, berr.ErrUnauthenticated) {
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}
 
-	if errors.Is(err, errutil.ErrUnauthorized) {
+	if errors.Is(err, berr.ErrUnauthorized) {
 		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 		return
 	}
 
-	if errors.Is(err, errutil.ErrInvalidArgument) {
+	if errors.Is(err, berr.ErrInvalidArgument) {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
 
-	if errors.Is(err, errutil.ErrUnavailable) {
+	if errors.Is(err, berr.ErrUnavailable) {
 		http.Error(w, http.StatusText(http.StatusServiceUnavailable), http.StatusServiceUnavailable)
 		return
 	}
 
-	if errors.Is(err, errutil.ErrUnknown) {
+	if errors.Is(err, berr.ErrUnknown) {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -68,7 +68,7 @@ func JSON(w http.ResponseWriter, r *http.Request, status int, v any) {
 	if err := coder.Encode(v); err != nil {
 		// Get log hook from the context to set an error which
 		// will be logged along with access log line.
-		if hook := ctxutil.Get(r.Context(), ctxutil.ErrorLogHook); hook != nil {
+		if hook := bctx.Get[func(error)](r.Context(), bctx.ErrorLogHook); hook != nil {
 			hook(err)
 		}
 
@@ -89,7 +89,7 @@ func TEXT(w http.ResponseWriter, r *http.Request, status int, v []byte) {
 	if _, err := w.Write(v); err != nil {
 		// Get log hook from the context to set an error which
 		// will be logged along with access log line.
-		if hook := ctxutil.Get(r.Context(), ctxutil.ErrorLogHook); hook != nil {
+		if hook := bctx.Get[func(error)](r.Context(), bctx.ErrorLogHook); hook != nil {
 			hook(err)
 		}
 

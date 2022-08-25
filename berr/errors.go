@@ -1,4 +1,4 @@
-package errutil
+package berr
 
 // This is compiling time check for interface implementation.
 var _ error = (Error)("")

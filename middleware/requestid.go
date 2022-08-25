@@ -1,9 +1,9 @@
-package mw
+package middleware
 
 import (
 	"net/http"
 
-	"github.com/heartwilltell/bones/ctxutil"
+	"github.com/heartwilltell/bones/bctx"
 )
 
 // RequestIDMiddleware tries to find different request IDs in
@@ -14,11 +14,11 @@ func RequestIDMiddleware() Middleware {
 			ctx := r.Context()
 
 			if id := r.Header.Get("lq-request-id"); id != "" {
-				ctx = ctxutil.Set(ctx, ctxutil.RequestID, id)
+				ctx = bctx.Set(ctx, bctx.RequestID, id)
 			}
 
 			if id := r.Header.Get("cf-ray"); id != "" {
-				ctx = ctxutil.Set(ctx, ctxutil.RequestID, id)
+				ctx = bctx.Set(ctx, bctx.RequestID, id)
 			}
 
 			next.ServeHTTP(w, r.WithContext(ctx))

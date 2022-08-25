@@ -54,20 +54,22 @@ func ValidateXID(id string) error {
 	return nil
 }
 
+const (
+	digiCodeMaxN = 9
+	digiCodeLen  = 6
+)
+
 // DigiCode returns 6-digit code as a string.
 func DigiCode() string {
-	const (
-		maxN    = 9
-		codeLen = 6
+	var (
+		b   strings.Builder
+		rng fastrand.RNG
 	)
 
-	var rng fastrand.RNG
 	rng.Seed(uint32(time.Now().UnixNano()))
 
-	var b strings.Builder
-
-	for i := 0; i < codeLen; i++ {
-		b.WriteString(strconv.Itoa(int(fastrand.Uint32n(maxN))))
+	for i := 0; i < digiCodeLen; i++ {
+		b.WriteString(strconv.Itoa(int(fastrand.Uint32n(digiCodeMaxN))))
 	}
 
 	return b.String()
@@ -75,7 +77,7 @@ func DigiCode() string {
 
 // ValidateDigiCode validates code from DigiCode.
 func ValidateDigiCode(code string) error {
-	if len(code) != 6 || utf8.RuneCountInString(code) != 6 {
+	if len(code) != digiCodeLen || utf8.RuneCountInString(code) != digiCodeLen {
 		return ErrInvalidID
 	}
 
