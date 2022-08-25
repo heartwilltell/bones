@@ -7,12 +7,17 @@ import (
 	"time"
 
 	"github.com/heartwilltell/bones/db"
+	"github.com/heartwilltell/hc"
 	"go.uber.org/multierr"
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
+
+// Compilation time check that Conn implements
+// the hc.HealthChecker.
+var _ hc.HealthChecker = (*Conn)(nil)
 
 // Conn represents connection to Postgres.
 type Conn struct{ *pgxpool.Pool }
