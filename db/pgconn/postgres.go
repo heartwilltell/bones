@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/heartwilltell/bones/db"
+	"go.uber.org/multierr"
 
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
@@ -38,16 +38,7 @@ func New(connstr string) (*Conn, error) {
 
 func (c *Conn) DeferredRollback(ctx context.Context, tx pgx.Tx, deferredErr *error) {
 	if err := tx.Rollback(ctx); err != nil && !errors.Is(err, pgx.ErrTxClosed) {
-		if deferredErr == nil {
-
-		}
-
-		if *deferredErr != nil {
-			*deferredErr = stackErrors(*deferredErr, fmt.Errorf("failed to rollback transaction: %w", err))
-			return
-		}
-
-		*deferredErr = fmt.Errorf("failed to rollback transaction: %w", err)
+		multierr.AppendInto(deferredErr, fmt.Errorf("%w: %s", db.ErrTxRollback, err.Error()))
 	}
 }
 
@@ -78,48 +69,4 @@ func PgError(err error) (error, bool) {
 	}
 
 	return err, false
-}
-
-// stackError represents stack of errors.
-type stackError struct {
-	position uint
-	stack    []error
-}
-
-func stackErrors(err ...error) stackError {
-	return stackError{position: 0, stack: err}
-}
-
-func (s stackError) Unwrap() error {
-	if s.stack == nil {
-		return nil
-	}
-
-	if int(s.position) == len(s.stack)-1 {
-		return s.stack[s.position]
-	}
-
-	return stackError{
-		position: s.position - 1,
-		stack:    s.stack[s.position-1:],
-	}
-}
-
-func (s stackError) Error() string {
-	if s.stack == nil || len(s.stack) == 0 {
-		return ""
-	}
-
-	var b strings.Builder
-
-	for i, err := range s.stack {
-		if i == len(s.stack)-1 {
-			b.WriteString(err.Error())
-			continue
-		}
-
-		b.WriteString(err.Error() + "; ")
-	}
-
-	return b.String()
 }
