@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/heartwilltell/bones/middleware"
+	"github.com/heartwilltell/hc"
 	"github.com/heartwilltell/log"
 )
 
@@ -19,6 +20,9 @@ type Option func(server *Server)
 
 // WithLogger sets the server logger.
 func WithLogger(l log.Logger) Option { return func(s *Server) { s.log = l } }
+
+// WithHealthChecker sets the server health checker.
+func WithHealthChecker(hc hc.HealthChecker) Option { return func(s *Server) { s.hc = hc } }
 
 // WithMiddlewares sets given mw as router wide mw.
 func WithMiddlewares(m ...Middleware) Option { return func(s *Server) { s.router.Use(m...) } }
