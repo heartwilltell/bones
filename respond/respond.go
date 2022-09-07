@@ -14,7 +14,7 @@ import (
 func Error(w http.ResponseWriter, r *http.Request, err error) {
 	// Get log hook from the context to set an error which
 	// will be logged along with access log line.
-	if hook := bctx.Get[func(error)](r.Context(), bctx.ErrorLogHook); hook != nil {
+	if hook := bctx.Get[func(error)](r.Context(), bctx.LogErrHook); hook != nil {
 		hook(err)
 	}
 
@@ -68,7 +68,7 @@ func JSON(w http.ResponseWriter, r *http.Request, status int, v any) {
 	if err := coder.Encode(v); err != nil {
 		// Get log hook from the context to set an error which
 		// will be logged along with access log line.
-		if hook := bctx.Get[func(error)](r.Context(), bctx.ErrorLogHook); hook != nil {
+		if hook := bctx.Get[func(error)](r.Context(), bctx.LogErrHook); hook != nil {
 			hook(err)
 		}
 
@@ -89,7 +89,7 @@ func TEXT(w http.ResponseWriter, r *http.Request, status int, v []byte) {
 	if _, err := w.Write(v); err != nil {
 		// Get log hook from the context to set an error which
 		// will be logged along with access log line.
-		if hook := bctx.Get[func(error)](r.Context(), bctx.ErrorLogHook); hook != nil {
+		if hook := bctx.Get[func(error)](r.Context(), bctx.LogErrHook); hook != nil {
 			hook(err)
 		}
 

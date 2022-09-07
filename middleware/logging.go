@@ -20,7 +20,7 @@ func LoggingMiddleware(log log.Logger) Middleware {
 
 			var hookedError error
 
-			ctx := bctx.Set(r.Context(), bctx.ErrorLogHook, func(err error) { hookedError = err })
+			ctx := bctx.Set(r.Context(), bctx.LogErrHook, func(err error) { hookedError = err })
 			rid := bctx.Get[string](ctx, bctx.RequestID)
 
 			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)

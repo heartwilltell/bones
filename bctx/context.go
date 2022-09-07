@@ -5,21 +5,23 @@ import (
 )
 
 const (
-	// ErrorLogHook represents a key for context by which
+	// LogErrHook represents a key for context by which
 	// the error log hook can be received from the context.
-	ErrorLogHook key = "ctx.error-log-hook"
+	LogErrHook key = "ctx.log-error-hook"
 
 	// RequestID represents a key for context by which
 	// the request ID can be received from the context.
 	RequestID key = "ctx.request-id"
 )
 
+type LogErrHookFunc func(error)
+
 type (
 	// key represents a context key with custom type.
 	key string
 
 	// value represents generic constraint for context value type.
-	value interface{ func(error) | string }
+	value interface{ LogErrHookFunc | string }
 )
 
 // Get gets value from context by context key.

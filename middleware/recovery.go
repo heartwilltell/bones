@@ -18,7 +18,7 @@ func RecoveryMiddleware(log log.Logger) Middleware {
 			defer func() {
 				if recovery := recover(); recovery != nil && isAbortHandlerError(recovery) {
 					log.Error("Recovered form PANIC: %v", recovery)
-					if hook := bctx.Get[func(error)](r.Context(), bctx.ErrorLogHook); hook != nil {
+					if hook := bctx.Get[func(error)](r.Context(), bctx.LogErrHook); hook != nil {
 						hook(recoveryValueToError(recovery))
 					}
 

@@ -1,4 +1,6 @@
-# 👨🏻‍⚕️ `Bones` - An easy-peasy API squeezy.
+# 👨🏻‍⚕️ `Bones` - An easy-peasy API squeezy. [WIP]
+
+## ⚠️👷‍♂️🚧 Under construction! Please don't use this library until v1.0.0 
 
 👨🏻‍⚕️ `Bones` - Is a set of well-tested reusable components to speedup dat-to-day development of RESTful APIs.
 

@@ -14,9 +14,15 @@ func TestGet(t *testing.T) {
 		ctx := context.WithValue(context.Background(), RequestID, want)
 
 		got := Get[string](ctx, RequestID)
-		if got != want {
-			t.Errorf("expected := %s, got := %s", want, got)
-		}
+		td.Cmp(t, got, want)
+	})
+
+	t.Run("Get LogErrHook", func(t *testing.T) {
+		want := LogErrHookFunc(func(err error) {})
+		ctx := context.WithValue(context.Background(), LogErrHook, want)
+
+		got := Get[LogErrHookFunc](ctx, LogErrHook)
+		td.Cmp(t, got, want, td.Ptr())
 	})
 }
 
@@ -39,13 +45,32 @@ func TestSet(t *testing.T) {
 			t.Errorf("expected := %s got := %s", want, got)
 		}
 	})
+
+	t.Run("Set LogErrHook", func(t *testing.T) {
+		want := LogErrHookFunc(func(err error) {})
+
+		ctx := Set[LogErrHookFunc](context.Background(), LogErrHook, want)
+
+		got, ok := ctx.Value(LogErrHook).(LogErrHookFunc)
+		if !ok {
+			t.Errorf("expected velue of string type but got %s", reflect.TypeOf(got).Kind().String())
+		}
+
+		if reflect.TypeOf(got).Kind() != reflect.Func {
+			t.Errorf("expected velue of string type but got %s", reflect.TypeOf(got).Kind().String())
+		}
+
+		if !reflect.DeepEqual(want, got) {
+			t.Errorf("expected := %p, got := %p", want, got)
+		}
+	})
 }
 
 func Test_zero(t *testing.T) {
 	t.Run("Zero func(error)", func(t *testing.T) {
 		var expected func(error)
 
-		got := zero[func(error)]()
+		got := zero[LogErrHookFunc]()
 
 		td.Cmp(t, got, expected)
 	})
