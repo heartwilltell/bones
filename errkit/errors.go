@@ -15,7 +15,7 @@ const (
 
 	// ErrAlreadyExists indicates an attempt to create an entity
 	// which is failed because such entity already exists.
-	ErrAlreadyExists Error = "already exist"
+	ErrAlreadyExists Error = "already exists"
 
 	// ErrUnauthenticated indicates the request does not have valid
 	// authentication credentials to perform the operation.
