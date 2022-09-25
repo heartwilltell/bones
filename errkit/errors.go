@@ -30,10 +30,13 @@ const (
 	// This kind of error is retryable. Caller should retry with a backoff.
 	ErrUnavailable Error = "temporarily unavailable"
 
+	// ErrConnFailed shows that connection to resource failed.
+	ErrConnFailed Error = "connection failed"
+
 	// ErrTxFailed shows that database transaction failed.
 	ErrTxFailed Error = "transaction failed"
 
-	// ErrTxBegin shows that begin of database transaction is failed.
+	// ErrTxBegin shows that database transaction failed to begin.
 	ErrTxBegin Error = "failed to begin transaction"
 
 	// ErrTxCommit shows that commit of database transaction failed.
@@ -41,9 +44,6 @@ const (
 
 	// ErrTxRollback shows that rollback of database transaction failed.
 	ErrTxRollback Error = "failed to rollback transaction"
-
-	// ErrConnFailed shows that database connection failed.
-	ErrConnFailed Error = "failed to connect to database"
 
 	// ErrMigrationFailed shows that database migration failed.
 	ErrMigrationFailed Error = "failed to migrate database schema"
