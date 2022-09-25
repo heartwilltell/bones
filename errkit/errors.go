@@ -1,4 +1,4 @@
-package berr
+package errkit
 
 // This is compiling time check for interface implementation.
 var _ error = (Error)("")
@@ -13,9 +13,9 @@ const (
 	// ErrNotFound indicates that requested entity was not found.
 	ErrNotFound Error = "now found"
 
-	// ErrAlreadyExists indicates an attempt to create an entity
+	// ErrAlreadyExist indicates an attempt to create an entity
 	// which is failed because such entity already exists.
-	ErrAlreadyExists Error = "already exist"
+	ErrAlreadyExist Error = "already exist"
 
 	// ErrUnauthenticated indicates the request does not have valid
 	// authentication credentials to perform the operation.
@@ -29,6 +29,24 @@ const (
 	// ErrUnavailable indicates that the service is currently unavailable.
 	// This kind of error is retryable. Caller should retry with a backoff.
 	ErrUnavailable Error = "temporarily unavailable"
+
+	// ErrTxFailed shows that database transaction failed.
+	ErrTxFailed Error = "transaction failed"
+
+	// ErrTxBegin shows that begin of database transaction is failed.
+	ErrTxBegin Error = "failed to begin transaction"
+
+	// ErrTxCommit shows that commit of database transaction failed.
+	ErrTxCommit Error = "failed to commit transaction"
+
+	// ErrTxRollback shows that rollback of database transaction failed.
+	ErrTxRollback Error = "failed to rollback transaction"
+
+	// ErrConnFailed shows that database connection failed.
+	ErrConnFailed Error = "failed to connect to database"
+
+	// ErrMigrationFailed shows that database migration failed.
+	ErrMigrationFailed Error = "failed to migrate database schema"
 )
 
 // Error type represents package level errors.

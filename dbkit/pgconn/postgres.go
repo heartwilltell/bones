@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/heartwilltell/bones/db"
+	"github.com/heartwilltell/bones/errkit"
 	"github.com/heartwilltell/hc"
 	"go.uber.org/multierr"
 
@@ -35,7 +35,7 @@ func New(connstr string) (*Conn, error) {
 
 	pgConn, connErr := pgxpool.ConnectConfig(ctx, config)
 	if connErr != nil {
-		return nil, fmt.Errorf("postgres: %w: %s", db.ErrConnFailed, connErr.Error())
+		return nil, fmt.Errorf("postgres: %w: %s", errkit.ErrConnFailed, connErr.Error())
 	}
 
 	return &Conn{Pool: pgConn}, nil
@@ -43,7 +43,7 @@ func New(connstr string) (*Conn, error) {
 
 func (c *Conn) DeferredRollback(ctx context.Context, tx pgx.Tx, deferredErr *error) {
 	if err := tx.Rollback(ctx); err != nil && !errors.Is(err, pgx.ErrTxClosed) {
-		multierr.AppendInto(deferredErr, fmt.Errorf("%w: %s", db.ErrTxRollback, err.Error()))
+		multierr.AppendInto(deferredErr, fmt.Errorf("%w: %s", errkit.ErrTxRollback, err.Error()))
 	}
 }
 
@@ -59,17 +59,17 @@ func PgError(err error) (error, bool) {
 	var pgErr *pgconn.PgError
 
 	if errors.Is(err, pgx.ErrNoRows) {
-		return db.ErrNotFound, true
+		return errkit.ErrNotFound, true
 	}
 
 	if errors.As(err, &pgErr) {
 		switch pgErr.Code {
 		case "02000":
-			return fmt.Errorf("postgres: %w: %s", db.ErrNotFound, pgErr.Detail), true
+			return fmt.Errorf("postgres: %w: %s", errkit.ErrNotFound, pgErr.Detail), true
 		case "23505":
-			return fmt.Errorf("postgres: %w: %s", db.ErrAlreadyExist, pgErr.Detail), true
+			return fmt.Errorf("postgres: %w: %s", errkit.ErrAlreadyExist, pgErr.Detail), true
 		default:
-			return db.Error(fmt.Sprintf("postgres: %s", pgErr.Error())), true
+			return errkit.Error(fmt.Sprintf("postgres: %s", pgErr.Error())), true
 		}
 	}
 

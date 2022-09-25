@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/heartwilltell/bones/db/pgconn"
+	"github.com/heartwilltell/bones/dbkit/pgconn"
 
 	"github.com/jackc/tern/migrate"
 )
