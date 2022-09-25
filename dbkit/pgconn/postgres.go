@@ -67,7 +67,7 @@ func PgError(err error) (error, bool) {
 		case "02000":
 			return fmt.Errorf("postgres: %w: %s", errkit.ErrNotFound, pgErr.Detail), true
 		case "23505":
-			return fmt.Errorf("postgres: %w: %s", errkit.ErrAlreadyExist, pgErr.Detail), true
+			return fmt.Errorf("postgres: %w: %s", errkit.ErrAlreadyExists, pgErr.Detail), true
 		default:
 			return errkit.Error(fmt.Sprintf("postgres: %s", pgErr.Error())), true
 		}

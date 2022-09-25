@@ -13,9 +13,9 @@ const (
 	// ErrNotFound indicates that requested entity was not found.
 	ErrNotFound Error = "now found"
 
-	// ErrAlreadyExist indicates an attempt to create an entity
+	// ErrAlreadyExists indicates an attempt to create an entity
 	// which is failed because such entity already exists.
-	ErrAlreadyExist Error = "already exist"
+	ErrAlreadyExists Error = "already exist"
 
 	// ErrUnauthenticated indicates the request does not have valid
 	// authentication credentials to perform the operation.
