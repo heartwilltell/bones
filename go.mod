@@ -10,6 +10,7 @@ require (
 	github.com/jackc/pgconn v1.13.0
 	github.com/jackc/pgx/v4 v4.17.2
 	github.com/jackc/tern v1.13.0
+	github.com/mattn/go-sqlite3 v1.14.15
 	github.com/oklog/ulid/v2 v2.1.0
 	github.com/rs/xid v1.4.0
 	github.com/valyala/fastrand v1.1.0
@@ -31,7 +32,6 @@ require (
 	github.com/jackc/pgservicefile v0.0.0-20200714003250-2b9c44734f2b // indirect
 	github.com/jackc/pgtype v1.12.0 // indirect
 	github.com/jackc/puddle v1.3.0 // indirect
-	github.com/mattn/go-sqlite3 v1.14.15 // indirect
 	github.com/maxatome/go-testdeep v1.12.0 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
