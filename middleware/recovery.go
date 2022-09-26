@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/VictoriaMetrics/metrics"
-	"github.com/heartwilltell/bones/bctx"
+	"github.com/heartwilltell/bones/ctxkit"
 	"github.com/heartwilltell/log"
 )
 
@@ -18,7 +18,8 @@ func RecoveryMiddleware(log log.Logger) Middleware {
 			defer func() {
 				if recovery := recover(); recovery != nil && isAbortHandlerError(recovery) {
 					log.Error("Recovered form PANIC: %v", recovery)
-					if hook := bctx.Get[func(error)](r.Context(), bctx.LogErrHook); hook != nil {
+
+					if hook := ctxkit.GetLogErrHook(r.Context()); hook != nil {
 						hook(recoveryValueToError(recovery))
 					}
 

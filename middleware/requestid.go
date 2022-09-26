@@ -3,22 +3,23 @@ package middleware
 import (
 	"net/http"
 
-	"github.com/heartwilltell/bones/bctx"
+	"github.com/heartwilltell/bones/ctxkit"
+	"github.com/heartwilltell/bones/id"
 )
 
-// RequestIDMiddleware tries to find different request IDs in
-// request headers and set them to the request context.
-func RequestIDMiddleware() Middleware {
+// RequestIDMiddleware tries to find request IDs in
+// request headers and set it to the request context.
+func RequestIDMiddleware(header ...string) Middleware {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
 
-			if id := r.Header.Get("lq-request-id"); id != "" {
-				ctx = bctx.Set(ctx, bctx.RequestID, id)
-			}
-
-			if id := r.Header.Get("cf-ray"); id != "" {
-				ctx = bctx.Set(ctx, bctx.RequestID, id)
+			if len(header) != 0 {
+				if rid := r.Header.Get(header[0]); rid != "" {
+					ctx = ctxkit.SetRequestID(ctx, rid)
+				}
+			} else {
+				ctx = ctxkit.SetRequestID(ctx, id.ULID())
 			}
 
 			next.ServeHTTP(w, r.WithContext(ctx))

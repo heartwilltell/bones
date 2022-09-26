@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/heartwilltell/bones/bctx"
+	"github.com/heartwilltell/bones/ctxkit"
 	"github.com/heartwilltell/log"
 )
 
@@ -20,8 +20,8 @@ func LoggingMiddleware(log log.Logger) Middleware {
 
 			var hookedError error
 
-			ctx := bctx.Set(r.Context(), bctx.LogErrHook, func(err error) { hookedError = err })
-			rid := bctx.Get[string](ctx, bctx.RequestID)
+			ctx := ctxkit.SetLogErrHook(r.Context(), func(err error) { hookedError = err })
+			rid := ctxkit.GetRequestID(ctx)
 
 			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
 			next.ServeHTTP(ww, r.WithContext(ctx))
