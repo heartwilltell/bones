@@ -5,17 +5,33 @@ import (
 )
 
 const (
-	// LogErrHook represents a key for context by which
+	// LogErrHook represents a Key for context by which
 	// the error log hook can be received from the context.
-	logErrHook key = "ctx.log-error-hook"
+	logErrHook Key = "ctx.log-error-hook"
 
-	// RequestID represents a key for context by which
+	// RequestID represents a Key for context by which
 	// the request ID can be received from the context.
-	requestID key = "ctx.request-id"
+	requestID Key = "ctx.request-id"
 )
 
-// key represents a context key with custom type.
-type key string
+// Key represents a context Key with custom type.
+type Key string
+
+// Set sets given value T to the context by given Key.
+func Set[T any](ctx context.Context, key Key, value T) context.Context {
+	return context.WithValue(ctx, key, value)
+}
+
+// Get gets value of type T from contex. If valued does not exist returns
+// zeroed value for type T.
+func Get[T any](ctx context.Context, key Key) T {
+	value, ok := ctx.Value(key).(T)
+	if !ok {
+		return zero[T]()
+	}
+
+	return value
+}
 
 // SetLogErrHook sets the hook function to the context.
 func SetLogErrHook(ctx context.Context, hook func(err error)) context.Context {
@@ -45,4 +61,10 @@ func GetRequestID(ctx context.Context) string {
 	}
 
 	return ""
+}
+
+// zero returns default zeroed value for type T.
+func zero[T any]() T {
+	var z T
+	return z
 }
