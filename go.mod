@@ -11,6 +11,7 @@ require (
 	github.com/jackc/pgx/v4 v4.17.2
 	github.com/jackc/tern v1.13.0
 	github.com/mattn/go-sqlite3 v1.14.15
+	github.com/maxatome/go-testdeep v1.12.0
 	github.com/oklog/ulid/v2 v2.1.0
 	github.com/rs/xid v1.4.0
 	github.com/valyala/fastrand v1.1.0
@@ -32,12 +33,10 @@ require (
 	github.com/jackc/pgservicefile v0.0.0-20200714003250-2b9c44734f2b // indirect
 	github.com/jackc/pgtype v1.12.0 // indirect
 	github.com/jackc/puddle v1.3.0 // indirect
-	github.com/maxatome/go-testdeep v1.12.0 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/valyala/histogram v1.2.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
-	golang.org/x/crypto v0.0.0-20220924013350-4ba4fb4dd9e7 // indirect
-	golang.org/x/text v0.3.7 // indirect
-	gopkg.in/yaml.v2 v2.2.3 // indirect
+	golang.org/x/crypto v0.0.0-20221012134737-56aed061732a // indirect
+	golang.org/x/text v0.3.8 // indirect
 )

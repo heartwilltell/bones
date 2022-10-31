@@ -10,12 +10,12 @@ func TestError_Error(t *testing.T) {
 
 	tests := map[string]tcase{
 		"ErrMigrationFailed": {err: ErrMigrationFailed, want: "failed to migrate database schema"},
-		"ErrAlreadyExist":    {err: ErrAlreadyExists, want: "record already exists"},
+		"ErrAlreadyExist":    {err: ErrAlreadyExists, want: "already exists"},
 		"ErrTxFailed":        {err: ErrTxFailed, want: "transaction failed"},
 		"ErrTxBegin":         {err: ErrTxBegin, want: "failed to begin transaction"},
 		"ErrTxCommit":        {err: ErrTxCommit, want: "failed to commit transaction"},
 		"ErrTxRollback":      {err: ErrTxRollback, want: "failed to rollback transaction"},
-		"ErrNotFound":        {err: ErrNotFound, want: "record not found"},
+		"ErrNotFound":        {err: ErrNotFound, want: "not found"},
 		"Custom":             {err: Error("test error"), want: "test error"},
 	}
 

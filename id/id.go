@@ -20,6 +20,9 @@ var _ error = (Error)("")
 const (
 	// ErrInvalidID represents an error which indicates that given TID is invalid.
 	ErrInvalidID Error = "id: invalid identifier"
+
+	digiCodeMaxN = 9
+	digiCodeLen  = 6
 )
 
 // ULID returns ULID identifier as string.
@@ -53,11 +56,6 @@ func ValidateXID(id string) error {
 
 	return nil
 }
-
-const (
-	digiCodeMaxN = 9
-	digiCodeLen  = 6
-)
 
 // DigiCode returns 6-digit code as a string.
 func DigiCode() string {

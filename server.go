@@ -12,6 +12,7 @@ import (
 	"github.com/heartwilltell/bones/respond"
 	"github.com/heartwilltell/hc"
 	"github.com/heartwilltell/log"
+	"golang.org/x/sync/errgroup"
 )
 
 // Middleware represents an HTTP server middleware.
@@ -90,13 +91,24 @@ func (s *Server) Serve(ctx context.Context) error {
 		return fmt.Errorf("invalid server address: %s", s.server.Addr)
 	}
 
+	g, sctx := errgroup.WithContext(ctx)
+
 	// handle shutdown signal in the background
-	go s.handleShutdown(ctx)
+	g.Go(func() error { return s.handleShutdown(sctx) })
 
-	s.log.Info("Server started to listen on: %s", s.server.Addr)
+	g.Go(func() error {
+		s.log.Info("Server started to listen on: %s", s.server.Addr)
 
-	if err := s.server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		return fmt.Errorf("server failed: %w", err)
+		if err := s.server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			return fmt.Errorf("server failed: %w", err)
+		}
+
+		return nil
+	})
+
+	if err := g.Wait(); err != nil {
+		s.log.Error("Force exit! %s", err.Error())
+		panic(err)
 	}
 
 	s.log.Info("Bye!")
@@ -109,13 +121,24 @@ func (s *Server) ServeTLS(ctx context.Context, cert, key string) error {
 		return fmt.Errorf("invalid server address: %s", s.server.Addr)
 	}
 
+	g, sctx := errgroup.WithContext(ctx)
+
 	// handle shutdown signal in the background
-	go s.handleShutdown(ctx)
+	g.Go(func() error { return s.handleShutdown(sctx) })
 
-	s.log.Info("Server started to listen on: %s", s.server.Addr)
+	g.Go(func() error {
+		s.log.Info("Server started to listen on: %s", s.server.Addr)
 
-	if err := s.server.ListenAndServeTLS(cert, key); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		return fmt.Errorf("server failed: %w", err)
+		if err := s.server.ListenAndServeTLS(cert, key); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			return fmt.Errorf("server failed: %w", err)
+		}
+
+		return nil
+	})
+
+	if err := g.Wait(); err != nil {
+		s.log.Error("Force exit! %s", err.Error())
+		panic(err)
 	}
 
 	s.log.Info("Bye!")
@@ -146,7 +169,7 @@ func (s *Server) healthCheck(w http.ResponseWriter, r *http.Request) {
 // http.Server Shutdown method.
 //
 // If Shutdown method returns non nil error, program will panic immediately.
-func (s *Server) handleShutdown(ctx context.Context) {
+func (s *Server) handleShutdown(ctx context.Context) error {
 	<-ctx.Done()
 
 	s.log.Info("Shutting down the server!")
@@ -157,7 +180,8 @@ func (s *Server) handleShutdown(ctx context.Context) {
 	s.server.SetKeepAlivesEnabled(false)
 
 	if err := s.server.Shutdown(shutdownCtx); err != nil {
-		s.log.Error("Force exit! Failed to shutdown the server gracefully: %s", err.Error())
-		panic(err)
+		return fmt.Errorf("failed to shutdown the server gracefully: %w", err)
 	}
+
+	return nil
 }
