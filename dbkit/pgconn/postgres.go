@@ -8,11 +8,10 @@ import (
 
 	"github.com/heartwilltell/bones/errkit"
 	"github.com/heartwilltell/hc"
-	"go.uber.org/multierr"
-
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"go.uber.org/multierr"
 )
 
 // Compilation time check that Conn implements
@@ -45,6 +44,11 @@ func (c *Conn) DeferredRollback(ctx context.Context, tx pgx.Tx, deferredErr *err
 	if err := tx.Rollback(ctx); err != nil && !errors.Is(err, pgx.ErrTxClosed) {
 		multierr.AppendInto(deferredErr, fmt.Errorf("%w: %s", errkit.ErrTxRollback, err.Error()))
 	}
+}
+
+func (c *Conn) Close() error {
+	c.Pool.Close()
+	return nil
 }
 
 func (c *Conn) Health(ctx context.Context) error {

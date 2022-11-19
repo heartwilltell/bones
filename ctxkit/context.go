@@ -22,7 +22,7 @@ func Set[T any](ctx context.Context, key Key, value T) context.Context {
 	return context.WithValue(ctx, key, value)
 }
 
-// Get gets value of type T from contex. If valued does not exist returns
+// Get gets value of type T from context. If valued does not exist returns
 // zeroed value for type T.
 func Get[T any](ctx context.Context, key Key) T {
 	value, ok := ctx.Value(key).(T)
@@ -64,7 +64,4 @@ func GetRequestID(ctx context.Context) string {
 }
 
 // zero returns default zeroed value for type T.
-func zero[T any]() T {
-	var z T
-	return z
-}
+func zero[T any]() (v T) { return v }
