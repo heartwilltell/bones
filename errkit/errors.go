@@ -4,10 +4,10 @@ package errkit
 var _ error = (Error)("")
 
 const (
-	// ErrUnknown indicates unknown error.
+	// ErrUnknown indicates an unknown error.
 	ErrUnknown Error = "unknown error"
 
-	// ErrInvalidArgument indicates that client specified an invalid argument.
+	// ErrInvalidArgument indicates that client has specified an invalid argument.
 	ErrInvalidArgument Error = "invalid argument"
 
 	// ErrNotFound indicates that requested entity was not found.
@@ -30,7 +30,7 @@ const (
 	// This kind of error is retryable. Caller should retry with a backoff.
 	ErrUnavailable Error = "temporarily unavailable"
 
-	// ErrConnFailed shows that connection to resource failed.
+	// ErrConnFailed shows that connection to a resource failed.
 	ErrConnFailed Error = "connection failed"
 
 	// ErrTxFailed shows that database transaction failed.

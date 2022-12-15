@@ -16,6 +16,7 @@ require (
 	github.com/rs/xid v1.4.0
 	github.com/valyala/fastrand v1.1.0
 	go.uber.org/multierr v1.8.0
+	golang.org/x/sync v0.1.0
 )
 
 require (

@@ -298,35 +298,7 @@ func (s *Server) handleShutdown(ctx context.Context) error {
 
 func (s *Server) configure(options ...Option[*config]) error {
 	// Initialize the default settings.
-	cfg := config{
-		logger: log.NewNopLog(),
-
-		readTimeout:       readTimeout,
-		readHeaderTimeout: readHeaderTimeout,
-		writeTimeout:      writeTimeout,
-		idleTimeout:       idleTimeout,
-
-		globalMiddlewares: make([]Middleware, 0, 0),
-
-		health: healthConfig{
-			enable:                    false,
-			accessLogsEnabled:         false,
-			metricsForEndpointEnabled: false,
-			route:                     "/health",
-			healthChecker:             hc.NewNopChecker(),
-		},
-		metrics: metricsConfig{
-			enable:                    false,
-			accessLogsEnabled:         false,
-			metricsForEndpointEnabled: false,
-			route:                     "/metrics",
-		},
-		profiler: profilerConfig{
-			enable:            false,
-			accessLogsEnabled: false,
-			route:             "/profiler",
-		},
-	}
+	cfg := defaultConfig()
 
 	// Apply all server options to the config struct.
 	for _, opt := range options {
@@ -409,6 +381,43 @@ func (s *Server) configure(options ...Option[*config]) error {
 	}
 
 	return nil
+}
+
+// defaultConfig returns an instance os config with default values.
+func defaultConfig() config {
+	cfg := config{
+		logger: log.NewNopLog(),
+
+		readTimeout:       readTimeout,
+		readHeaderTimeout: readHeaderTimeout,
+		writeTimeout:      writeTimeout,
+		idleTimeout:       idleTimeout,
+
+		globalMiddlewares: make([]Middleware, 0, 0),
+
+		health: healthConfig{
+			enable:                    false,
+			accessLogsEnabled:         false,
+			metricsForEndpointEnabled: false,
+			route:                     "/health",
+			healthChecker:             hc.NewNopChecker(),
+		},
+
+		metrics: metricsConfig{
+			enable:                    false,
+			accessLogsEnabled:         false,
+			metricsForEndpointEnabled: false,
+			route:                     "/metrics",
+		},
+
+		profiler: profilerConfig{
+			enable:            false,
+			accessLogsEnabled: false,
+			route:             "/profiler",
+		},
+	}
+
+	return cfg
 }
 
 // config holds Server configuration.
