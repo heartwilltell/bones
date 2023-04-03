@@ -1,4 +1,4 @@
-package bones
+package servekit
 
 import (
 	"net/http"
@@ -14,7 +14,7 @@ func TestNew(t *testing.T) {
 	type tcase struct {
 		addr    string
 		options []Option[*config]
-		want    *Server
+		want    *ListenerHTTP
 		wantErr error
 	}
 
@@ -22,7 +22,7 @@ func TestNew(t *testing.T) {
 		"OK": {
 			addr:    ":8080",
 			options: nil,
-			want: &Server{
+			want: &ListenerHTTP{
 				health: hc.NewNopChecker(),
 				logger: log.NewNopLog(),
 				router: chi.NewRouter(),

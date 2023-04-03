@@ -1,6 +1,6 @@
-// Package id provides the set of functions to generate
-// different kind of identifiers
-package id
+// Package idkit provides the set of functions to generate
+// different kind of identifiers.
+package idkit
 
 import (
 	"math/rand"

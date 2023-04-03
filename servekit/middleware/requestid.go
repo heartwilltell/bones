@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/heartwilltell/bones/ctxkit"
-	"github.com/heartwilltell/bones/id"
+	"github.com/heartwilltell/bones/idkit"
 )
 
 // RequestIDMiddleware tries to find request IDs in
@@ -19,7 +19,7 @@ func RequestIDMiddleware(header ...string) Middleware {
 					ctx = ctxkit.SetRequestID(ctx, rid)
 				}
 			} else {
-				ctx = ctxkit.SetRequestID(ctx, id.ULID())
+				ctx = ctxkit.SetRequestID(ctx, idkit.ULID())
 			}
 
 			next.ServeHTTP(w, r.WithContext(ctx))
