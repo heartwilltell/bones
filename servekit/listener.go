@@ -56,8 +56,12 @@ func New(addr string, options ...Option[*config]) (*ListenerHTTP, error) {
 		health: hc.NewNopChecker(),
 		router: router,
 		server: &http.Server{
-			Addr:    addr,
-			Handler: router,
+			Addr:              addr,
+			Handler:           router,
+			ReadTimeout:       readTimeout,
+			ReadHeaderTimeout: readHeaderTimeout,
+			WriteTimeout:      writeTimeout,
+			IdleTimeout:       idleTimeout,
 		},
 	}
 
@@ -187,7 +191,7 @@ func (l *ListenerHTTP) configure(options ...Option[*config]) error {
 		writeTimeout:      writeTimeout,
 		idleTimeout:       idleTimeout,
 
-		globalMiddlewares: make([]Middleware, 0, 0),
+		globalMiddlewares: make([]Middleware, 0),
 
 		health: HealthEndpointConfig{
 			enable:                    false,

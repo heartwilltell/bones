@@ -22,6 +22,7 @@ func (c *Conn) Health(ctx context.Context) error {
 	if err := c.PingContext(ctx); err != nil {
 		return fmt.Errorf("sqlite: health check failed: %w", err)
 	}
+
 	return nil
 }
 

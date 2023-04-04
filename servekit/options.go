@@ -72,7 +72,6 @@ func WithHealthCheck(cfg HealthEndpointConfig) Option[*config] {
 		if cfg.healthChecker != nil {
 			c.health.healthChecker = cfg.healthChecker
 		}
-
 	}
 }
 

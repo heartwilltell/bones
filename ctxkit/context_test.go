@@ -34,3 +34,17 @@ func TestSetRequestID(t *testing.T) {
 	got := ctx.Value(requestID)
 	td.Cmp(t, got, want)
 }
+
+func TestSet(t *testing.T) {
+	want := "test"
+	ctx := Set[string](context.Background(), "ctx.str", want)
+	got := ctx.Value(Key("ctx.str"))
+	td.Cmp(t, got, want)
+}
+
+func TestGet(t *testing.T) {
+	want := "test"
+	ctx := context.WithValue(context.Background(), Key("ctx.str"), want)
+	got := Get[string](ctx, "ctx.str")
+	td.Cmp(t, got, want)
+}
