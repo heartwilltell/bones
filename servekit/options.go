@@ -61,7 +61,7 @@ func WithMetrics(cfg MetricsEndpointConfig) Option[*config] {
 // WithHealthCheck turns on the health check endpoint.
 func WithHealthCheck(cfg HealthEndpointConfig) Option[*config] {
 	return func(c *config) {
-		c.health.enable = cfg.enable
+		c.health.enable = true
 		c.health.AccessLogsEnabled = cfg.AccessLogsEnabled
 		c.health.MetricsForEndpointEnabled = cfg.MetricsForEndpointEnabled
 
@@ -78,7 +78,7 @@ func WithHealthCheck(cfg HealthEndpointConfig) Option[*config] {
 // WithProfiler turns on the profiler endpoint.
 func WithProfiler(cfg ProfilerEndpointConfig) Option[*config] {
 	return func(c *config) {
-		c.profiler.enable = cfg.enable
+		c.profiler.enable = true
 		c.profiler.accessLogsEnabled = cfg.accessLogsEnabled
 
 		if cfg.route != "" {
