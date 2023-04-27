@@ -64,11 +64,6 @@ func MigrateWithBackup(databasePath string) MigrationOption {
 	}
 }
 
-// MigrateWithMigrationsPath sets the path to the folder with migrations.
-func MigrateWithMigrationsPath(migrationsPath string) MigrationOption {
-	return func(m *Migrator) { m.migrationsPath = migrationsPath }
-}
-
 // MigrateWithLogs sets the Migrator logger.
 func MigrateWithLogs(logger log.Logger) MigrationOption {
 	return func(m *Migrator) { m.log = logger }
@@ -85,9 +80,6 @@ type Migrator struct {
 	conn *Conn
 	log  log.Logger
 
-	// migrationsPath holds a path to folder with migrations.
-	migrationsPath string
-
 	// databasePath holds a path to the SQLite database file.
 	databasePath string
 
@@ -102,11 +94,10 @@ type Migrator struct {
 }
 
 // Migrations returns a pointer to a new instance of Migrator.
-func Migrations(conn *Conn, migrations fs.FS, options ...MigrationOption) (*Migrator, error) {
+func Migrations(conn *Conn, options ...MigrationOption) *Migrator {
 	m := Migrator{
 		conn:             conn,
 		log:              log.NewNopLog(),
-		migrationsPath:   ".",
 		databasePath:     ".",
 		versionTableName: schemaVersionTableName,
 		enableBackup:     false,
@@ -116,9 +107,13 @@ func Migrations(conn *Conn, migrations fs.FS, options ...MigrationOption) (*Migr
 		option(&m)
 	}
 
-	entries, readErr := fs.ReadDir(migrations, m.migrationsPath)
+	return &m
+}
+
+func (m *Migrator) Migrate(ctx context.Context, migrations fs.FS, migrationsPath string) error {
+	entries, readErr := fs.ReadDir(migrations, migrationsPath)
 	if readErr != nil {
-		return nil, fmt.Errorf("sqlite: failed to load migrations: %w", readErr)
+		return fmt.Errorf("sqlite: failed to load migrations: %w", readErr)
 	}
 
 	m.migrations = make([]Migration, 0, len(entries))
@@ -126,7 +121,7 @@ func Migrations(conn *Conn, migrations fs.FS, options ...MigrationOption) (*Migr
 	for _, entry := range entries {
 		info, infoErr := entry.Info()
 		if infoErr != nil {
-			return nil, fmt.Errorf("sqlite: failed to get file info: %w", infoErr)
+			return fmt.Errorf("sqlite: failed to get file info: %w", infoErr)
 		}
 
 		if strings.HasSuffix(info.Name(), ".sql") {
@@ -134,7 +129,7 @@ func Migrations(conn *Conn, migrations fs.FS, options ...MigrationOption) (*Migr
 
 			migration, readFileErr := fs.ReadFile(migrations, info.Name())
 			if readFileErr != nil {
-				return nil, fmt.Errorf("sqlite: failed to load migration file '%s': %w", info.Name(), readFileErr)
+				return fmt.Errorf("sqlite: failed to load migration file '%s': %w", info.Name(), readFileErr)
 			}
 
 			parts := strings.SplitN(string(migration), migrationRollbackDivider, 2)
@@ -148,10 +143,6 @@ func Migrations(conn *Conn, migrations fs.FS, options ...MigrationOption) (*Migr
 		m.log.Info("Loading finished")
 	}
 
-	return &m, nil
-}
-
-func (m *Migrator) Migrate(ctx context.Context) error {
 	m.log.Info("Starting migration process")
 
 	if m.enableBackup {
@@ -169,28 +160,33 @@ func (m *Migrator) Migrate(ctx context.Context) error {
 	if err := m.migrate(ctx); err != nil {
 		m.log.Error("Migration failed: %s", err.Error())
 
-		m.log.Info("Removing broken database file '%s'", m.databasePath)
+		if m.enableBackup {
+			m.log.Info("Removing broken database file '%s'", m.databasePath)
 
-		if removeErr := os.Remove(m.databasePath); removeErr != nil {
-			return errors.Join(err, fmt.Errorf("failed to delete broken database file: %w", removeErr))
-		}
+			if removeErr := os.Remove(m.databasePath); removeErr != nil {
+				return errors.Join(err, fmt.Errorf("failed to delete broken database file: %w", removeErr))
+			}
 
-		dir, file := path.Split(m.databasePath)
+			dir, file := path.Split(m.databasePath)
 
-		if renameErr := os.Rename(path.Join(dir, fmt.Sprintf("backup-%s", file)), m.databasePath); renameErr != nil {
-			return errors.Join(err, fmt.Errorf("failed to rename backup file: %w", renameErr))
+			if renameErr := os.Rename(path.Join(dir, fmt.Sprintf("backup-%s", file)), m.databasePath); renameErr != nil {
+				return errors.Join(err, fmt.Errorf("failed to rename backup file: %w", renameErr))
+			}
 		}
 
 		return err
 	}
 
 	m.log.Info("Migration complete")
-	m.log.Info("Removing backup")
 
-	dir, file := path.Split(m.databasePath)
+	if m.enableBackup {
+		m.log.Info("Removing backup")
 
-	if err := os.Remove(path.Join(dir, fmt.Sprintf("backup-%s", file))); err != nil {
-		return errors.Join(err, fmt.Errorf("failed to rename enableBackup file: %w", err))
+		dir, file := path.Split(m.databasePath)
+
+		if err := os.Remove(path.Join(dir, fmt.Sprintf("backup-%s", file))); err != nil {
+			return errors.Join(err, fmt.Errorf("failed to rename enableBackup file: %w", err))
+		}
 	}
 
 	return nil
