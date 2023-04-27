@@ -59,14 +59,18 @@ type MigrationOption func(m *Migrator)
 // MigrateWithBackup sets whether backup of the database enabled
 func MigrateWithBackup(databasePath string) MigrationOption {
 	return func(m *Migrator) {
-		m.enableBackup = true
+		m.backupEnabled = true
 		m.databasePath = databasePath
 	}
 }
 
-// MigrateWithLogs sets the Migrator logger.
-func MigrateWithLogs(logger log.Logger) MigrationOption {
+// MigrateWithLogger sets the Migrator logger.
+func MigrateWithLogger(logger log.Logger) MigrationOption {
 	return func(m *Migrator) { m.log = logger }
+}
+
+func MigrateWithMigrationPath(migrationsPath string) MigrationOption {
+	return func(m *Migrator) { m.migrationsPath = migrationsPath }
 }
 
 // Migration represents a database migration.
@@ -77,8 +81,13 @@ type Migration struct {
 
 // Migrator loads and applies database migrations to SQLite.
 type Migrator struct {
-	conn *Conn
-	log  log.Logger
+	log log.Logger
+
+	// migrations holds a filesystem with migration files.
+	migrations fs.FS
+
+	// migrationsPath holds path to the folder with migrations.
+	migrationsPath string
 
 	// databasePath holds a path to the SQLite database file.
 	databasePath string
@@ -86,21 +95,19 @@ type Migrator struct {
 	// versionTableName holds the name of the schema version table.
 	versionTableName string
 
-	// enableBackup shows whether backup of the database is enabled.
-	enableBackup bool
-
-	// migrations holds a set of migrations.
-	migrations []Migration
+	// backupEnabled shows whether backup of the database is enabled.
+	backupEnabled bool
 }
 
 // Migrations returns a pointer to a new instance of Migrator.
-func Migrations(conn *Conn, options ...MigrationOption) *Migrator {
+func Migrations(migrations fs.FS, options ...MigrationOption) *Migrator {
 	m := Migrator{
-		conn:             conn,
 		log:              log.NewNopLog(),
+		migrations:       migrations,
+		migrationsPath:   ".",
 		databasePath:     ".",
 		versionTableName: schemaVersionTableName,
-		enableBackup:     false,
+		backupEnabled:    false,
 	}
 
 	for _, option := range options {
@@ -110,42 +117,15 @@ func Migrations(conn *Conn, options ...MigrationOption) *Migrator {
 	return &m
 }
 
-func (m *Migrator) Migrate(ctx context.Context, migrations fs.FS, migrationsPath string) error {
-	entries, readErr := fs.ReadDir(migrations, migrationsPath)
-	if readErr != nil {
-		return fmt.Errorf("sqlite: failed to load migrations: %w", readErr)
-	}
-
-	m.migrations = make([]Migration, 0, len(entries))
-
-	for _, entry := range entries {
-		info, infoErr := entry.Info()
-		if infoErr != nil {
-			return fmt.Errorf("sqlite: failed to get file info: %w", infoErr)
-		}
-
-		if strings.HasSuffix(info.Name(), ".sql") {
-			m.log.Info("Loading '%s'", info.Name())
-
-			migration, readFileErr := fs.ReadFile(migrations, info.Name())
-			if readFileErr != nil {
-				return fmt.Errorf("sqlite: failed to load migration file '%s': %w", info.Name(), readFileErr)
-			}
-
-			parts := strings.SplitN(string(migration), migrationRollbackDivider, 2)
-
-			m.migrations = append(m.migrations, Migration{
-				Up:   strings.TrimSpace(parts[0]),
-				Down: strings.TrimSpace(parts[1]),
-			})
-		}
-
-		m.log.Info("Loading finished")
+func (m *Migrator) Migrate(ctx context.Context, conn *Conn) error {
+	migrations, loadErr := m.loadMigrations()
+	if loadErr != nil {
+		return loadErr
 	}
 
 	m.log.Info("Starting migration process")
 
-	if m.enableBackup {
+	if m.backupEnabled {
 		m.log.Info("Creating database backup")
 
 		if err := m.backup(); err != nil {
@@ -157,10 +137,10 @@ func (m *Migrator) Migrate(ctx context.Context, migrations fs.FS, migrationsPath
 
 	m.log.Info("Migrating")
 
-	if err := m.migrate(ctx); err != nil {
+	if err := m.migrate(ctx, conn, migrations); err != nil {
 		m.log.Error("Migration failed: %s", err.Error())
 
-		if m.enableBackup {
+		if m.backupEnabled {
 			m.log.Info("Removing broken database file '%s'", m.databasePath)
 
 			if removeErr := os.Remove(m.databasePath); removeErr != nil {
@@ -179,25 +159,25 @@ func (m *Migrator) Migrate(ctx context.Context, migrations fs.FS, migrationsPath
 
 	m.log.Info("Migration complete")
 
-	if m.enableBackup {
+	if m.backupEnabled {
 		m.log.Info("Removing backup")
 
 		dir, file := path.Split(m.databasePath)
 
 		if err := os.Remove(path.Join(dir, fmt.Sprintf("backup-%s", file))); err != nil {
-			return errors.Join(err, fmt.Errorf("failed to rename enableBackup file: %w", err))
+			return errors.Join(err, fmt.Errorf("failed to rename backupEnabled file: %w", err))
 		}
 	}
 
 	return nil
 }
 
-func (m *Migrator) migrate(ctx context.Context) (mErr error) {
-	if err := m.conn.PingContext(ctx); err != nil {
+func (m *Migrator) migrate(ctx context.Context, conn *Conn, migrations []Migration) (mErr error) {
+	if err := conn.PingContext(ctx); err != nil {
 		return fmt.Errorf("failed to connect to database: %w", err)
 	}
 
-	tx, txErr := m.conn.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+	tx, txErr := conn.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
 	if txErr != nil {
 		return fmt.Errorf("failed to begin transaction: %w", txErr)
 	}
@@ -207,7 +187,7 @@ func (m *Migrator) migrate(ctx context.Context) (mErr error) {
 		}
 	}()
 
-	for _, migration := range m.migrations {
+	for _, migration := range migrations {
 		if _, err := tx.ExecContext(ctx, migration.Up); err != nil {
 			return fmt.Errorf("failed to apply migration: %w", err)
 		}
@@ -218,6 +198,42 @@ func (m *Migrator) migrate(ctx context.Context) (mErr error) {
 	}
 
 	return nil
+}
+
+func (m *Migrator) loadMigrations() ([]Migration, error) {
+	entries, readErr := fs.ReadDir(m.migrations, m.migrationsPath)
+	if readErr != nil {
+		return nil, fmt.Errorf("sqlite: failed to load migrations: %w", readErr)
+	}
+
+	migrations := make([]Migration, 0, len(entries))
+
+	for _, entry := range entries {
+		info, infoErr := entry.Info()
+		if infoErr != nil {
+			return nil, fmt.Errorf("sqlite: failed to get file info: %w", infoErr)
+		}
+
+		if strings.HasSuffix(info.Name(), ".sql") {
+			m.log.Info("Loading '%s'", info.Name())
+
+			migration, readFileErr := fs.ReadFile(m.migrations, info.Name())
+			if readFileErr != nil {
+				return nil, fmt.Errorf("sqlite: failed to load migration file '%s': %w", info.Name(), readFileErr)
+			}
+
+			parts := strings.SplitN(string(migration), migrationRollbackDivider, 2)
+
+			migrations = append(migrations, Migration{
+				Up:   strings.TrimSpace(parts[0]),
+				Down: strings.TrimSpace(parts[1]),
+			})
+		}
+
+		m.log.Info("Loading finished")
+	}
+
+	return migrations, nil
 }
 
 func (m *Migrator) backup() (bErr error) {
