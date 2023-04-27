@@ -57,15 +57,20 @@ func (c *Conn) Health(ctx context.Context) error {
 // MigrationOption
 type MigrationOption func(m *Migrator)
 
-// MigrateWithBackup
-func MigrateWithBackup(filePath string) MigrationOption {
+// MigrateWithBackup sets whether backup of the database enabled
+func MigrateWithBackup(databasePath string) MigrationOption {
 	return func(m *Migrator) {
 		m.enableBackup = true
-		m.databasePath = filePath
+		m.databasePath = databasePath
 	}
 }
 
-// MigrateWithLogs
+// MigrateWithMigrationsPath sets the path to the folder with migrations.
+func MigrateWithMigrationsPath(migrationsPath string) MigrationOption {
+	return func(m *Migrator) { m.migrationsPath = migrationsPath }
+}
+
+// MigrateWithLogs sets the Migrator logger.
 func MigrateWithLogs(logger log.Logger) MigrationOption {
 	return func(m *Migrator) { m.log = logger }
 }
