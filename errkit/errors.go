@@ -11,7 +11,7 @@ const (
 	ErrInvalidArgument Error = "invalid argument"
 
 	// ErrNotFound indicates that requested entity was not found.
-	ErrNotFound Error = "now found"
+	ErrNotFound Error = "not found"
 
 	// ErrAlreadyExists indicates an attempt to create an entity
 	// which is failed because such entity already exists.

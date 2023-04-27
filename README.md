@@ -10,16 +10,15 @@
 
 ## Packages
 
-The root package holds an HTTP server, which is just a thin wrapper around great router `github.com/go-chi/chi/v5`.
-
-- [`middleware`](middleware/middleware.go) - Holds a set of HTTP server middlewares.
-- `errkit` - Holds set or predefined error constants.
+- [`servekit`](servekit/listener.go) - Holds an HTTP server, which is just a thin wrapper around great router `github.com/go-chi/chi/v5`.
+    - [`respond`](servekit/respond/respond.go) - Holds set of usefully functions to respond to an HTTP request with a proper status code and a body as JSON,
+      plain text, and error.
+    - [`middleware`](servekit/middleware/middleware.go) - 
+- [`errkit`](errkit/errors.go) - Holds set of predefined sentinel errors for the common cases.
+- [`idkit`](idkit/id.go) - Holds set of functions which generates and validates different kind of identifiers.
 - `dbkit` - Holds database related utils and wrappers.
     - [`pgconn`](dbkit/pgconn/postgres.go) - Tiny wrapper around `github.com/jackc/pgx/v4` to work with Postgres.
     - [`pgmigrate`](dbkit/pgmigrate/migrator.go) - Tiny wrapper around `github.com/jackc/tern` to work with database schema migrations.
-- [`id`](id/id.go) - Holds set of functions which generates and validates different kind of identifiers.
-- [`respond`](respond/respond.go) - Holds set of usefully functions to respond to an HTTP request with a proper status code and a body as JSON, plain text, and
-  error.
 
 ## On the shoulders of giants
 

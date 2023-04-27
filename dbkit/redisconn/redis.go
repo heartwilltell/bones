@@ -13,6 +13,10 @@ type Conn struct{ *redis.Client }
 // Option modifies the redis.Options.
 type Option func(o *redis.Options)
 
+func WithClientName(name string) Option {
+	return func(o *redis.Options) { o.ClientName = name }
+}
+
 // New returns a pointer to a new instance of Conn struct.
 func New(addr string, options ...Option) (*Conn, error) {
 	connOptions := redis.Options{
