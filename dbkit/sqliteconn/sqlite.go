@@ -10,7 +10,6 @@ import (
 	"os"
 	"path"
 	"strings"
-	"sync"
 
 	"github.com/heartwilltell/log"
 
@@ -97,8 +96,6 @@ type Migrator struct {
 
 	// enableBackup shows whether backup of the database is enabled.
 	enableBackup bool
-
-	migrationsLoaded sync.Once
 
 	// migrations holds a set of migrations.
 	migrations []Migration
