@@ -47,7 +47,7 @@ func WithLogger(l log.Logger) Option[*config] {
 
 // WithHealthCheck turns on the health check endpoint.
 // Receives the following option to configure the endpoint:
-// - SetHealthChecker - to change the HealthChecker implementation.
+// - SetHealthChecker - to change the healthChecker implementation.
 // - HealthCheckRoute - to set the endpoint route.
 // - HealthCheckAccessLog - to enable access log for endpoint.
 // - HealthCheckMetricsForEndpoint - to enable metrics collection for endpoint.
@@ -70,26 +70,26 @@ func SetHealthChecker(hc hc.HealthChecker) Option[*HealthEndpointConfig] {
 			return
 		}
 
-		c.HealthChecker = hc
+		c.healthChecker = hc
 	}
 }
 
 // HealthCheckRoute represents an optional function for WithHealthCheck function.
 // If passed to the WithHealthCheck, will set the config.health.route.
 func HealthCheckRoute(route string) Option[*HealthEndpointConfig] {
-	return func(c *HealthEndpointConfig) { c.Route = route }
+	return func(c *HealthEndpointConfig) { c.route = route }
 }
 
 // HealthCheckAccessLog represents an optional function for WithHealthCheck function.
 // If passed to the WithHealthCheck, will set the config.health.accessLogsEnabled to true.
 func HealthCheckAccessLog(enable bool) Option[*HealthEndpointConfig] {
-	return func(c *HealthEndpointConfig) { c.AccessLogsEnabled = enable }
+	return func(c *HealthEndpointConfig) { c.accessLogsEnabled = enable }
 }
 
 // HealthCheckMetricsForEndpoint represents an optional function for WithHealthCheck function.
 // If passed to the WithHealthCheck, will set the config.health.metricsForEndpointEnabled to true.
 func HealthCheckMetricsForEndpoint(enable bool) Option[*HealthEndpointConfig] {
-	return func(c *HealthEndpointConfig) { c.MetricsForEndpointEnabled = enable }
+	return func(c *HealthEndpointConfig) { c.metricsForEndpointEnabled = enable }
 }
 
 // WithMetrics turns on the metrics endpoint.
@@ -110,19 +110,19 @@ func WithMetrics(options ...Option[*MetricsEndpointConfig]) Option[*config] {
 // MetricsRoute represents an optional function for WithMetrics function.
 // If passed to the WithMetrics, will set the config.health.route.
 func MetricsRoute(route string) Option[*MetricsEndpointConfig] {
-	return func(c *MetricsEndpointConfig) { c.Route = route }
+	return func(c *MetricsEndpointConfig) { c.route = route }
 }
 
 // MetricsAccessLog represents an optional function for WithMetrics function.
 // If passed to the WithMetrics, will set the config.health.accessLogsEnabled to true.
 func MetricsAccessLog(enable bool) Option[*MetricsEndpointConfig] {
-	return func(c *MetricsEndpointConfig) { c.AccessLogsEnabled = enable }
+	return func(c *MetricsEndpointConfig) { c.accessLogsEnabled = enable }
 }
 
 // MetricsMetricsForEndpoint represents an optional function for WithMetrics function.
 // If passed to the WithMetrics, will set the config.health.metricsForEndpointEnabled to true.
 func MetricsMetricsForEndpoint(enable bool) Option[*MetricsEndpointConfig] {
-	return func(c *MetricsEndpointConfig) { c.MetricsForEndpointEnabled = enable }
+	return func(c *MetricsEndpointConfig) { c.metricsForEndpointEnabled = enable }
 }
 
 // WithProfiler turns on the profiler endpoint.
@@ -139,27 +139,24 @@ func WithProfiler(cfg ProfilerEndpointConfig) Option[*config] {
 
 // MetricsEndpointConfig represents configuration of builtin metrics route.
 type MetricsEndpointConfig struct {
-	Route                     string
-	AccessLogsEnabled         bool
-	MetricsForEndpointEnabled bool
-
-	enable bool
+	route                     string
+	accessLogsEnabled         bool
+	metricsForEndpointEnabled bool
+	enable                    bool
 }
 
 // HealthEndpointConfig represents configuration of builtin health check route.
 type HealthEndpointConfig struct {
-	Route                     string
-	HealthChecker             hc.HealthChecker
-	AccessLogsEnabled         bool
-	MetricsForEndpointEnabled bool
-
-	enable bool
+	route                     string
+	healthChecker             hc.HealthChecker
+	accessLogsEnabled         bool
+	metricsForEndpointEnabled bool
+	enable                    bool
 }
 
 // ProfilerEndpointConfig represents configuration of builtin profiler route.
 type ProfilerEndpointConfig struct {
 	route             string
 	accessLogsEnabled bool
-
-	enable bool
+	enable            bool
 }
