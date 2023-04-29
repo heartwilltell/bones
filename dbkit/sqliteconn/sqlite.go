@@ -9,6 +9,7 @@ import (
 	"io/fs"
 	"os"
 	"path"
+	"sort"
 	"strings"
 
 	"github.com/heartwilltell/log"
@@ -206,9 +207,13 @@ func (m *Migrator) loadMigrations() ([]Migration, error) {
 		return nil, fmt.Errorf("sqlite: failed to load migrations: %w", readErr)
 	}
 
+	sort.Slice(entries, func(i, j int) bool {
+		return entries[i].Name() < entries[j].Name()
+	})
+
 	migrations := make([]Migration, 0, len(entries))
 
-	for _, entry := range entries {
+	for i, entry := range entries {
 		info, infoErr := entry.Info()
 		if infoErr != nil {
 			return nil, fmt.Errorf("sqlite: failed to get file info: %w", infoErr)
@@ -228,6 +233,13 @@ func (m *Migrator) loadMigrations() ([]Migration, error) {
 			}
 
 			migrations = append(migrations, Migration{
+				Number: func() uint {
+					if i == 0 {
+						return uint(i + 1)
+					}
+
+					return uint(i)
+				}(),
 				Up:   strings.TrimSpace(parts[0]),
 				Down: strings.TrimSpace(parts[1]),
 			})
