@@ -223,6 +223,9 @@ func (m *Migrator) loadMigrations() ([]Migration, error) {
 			}
 
 			parts := strings.SplitN(string(migration), migrationRollbackDivider, 2)
+			if len(parts) != 2 {
+				return nil, fmt.Errorf("sqlite: infalid migration file '%s': divider '%s' is absent", info.Name(), migrationRollbackDivider)
+			}
 
 			migrations = append(migrations, Migration{
 				Up:   strings.TrimSpace(parts[0]),
