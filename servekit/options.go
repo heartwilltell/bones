@@ -45,34 +45,84 @@ func WithLogger(l log.Logger) Option[*config] {
 	}
 }
 
-// WithMetrics turns on the metrics endpoint.
-func WithMetrics(cfg MetricsEndpointConfig) Option[*config] {
+// WithHealthCheck turns on the health check endpoint.
+// Receives the following option to configure the endpoint:
+// - SetHealthChecker - to change the HealthChecker implementation.
+// - HealthCheckRoute - to set the endpoint route.
+// - HealthCheckAccessLog - to enable access log for endpoint.
+// - HealthCheckMetricsForEndpoint - to enable metrics collection for endpoint.
+func WithHealthCheck(options ...Option[*HealthEndpointConfig]) Option[*config] {
 	return func(c *config) {
-		c.metrics.enable = true
-		c.metrics.AccessLogsEnabled = cfg.AccessLogsEnabled
-		c.metrics.MetricsForEndpointEnabled = cfg.MetricsForEndpointEnabled
+		c.health.enable = true
 
-		if cfg.Route != "" {
-			c.metrics.Route = cfg.Route
+		for _, opt := range options {
+			opt(&c.health)
 		}
 	}
 }
 
-// WithHealthCheck turns on the health check endpoint.
-func WithHealthCheck(cfg HealthEndpointConfig) Option[*config] {
-	return func(c *config) {
-		c.health.enable = true
-		c.health.AccessLogsEnabled = cfg.AccessLogsEnabled
-		c.health.MetricsForEndpointEnabled = cfg.MetricsForEndpointEnabled
-
-		if cfg.Route != "" {
-			c.metrics.Route = cfg.Route
+// SetHealthChecker represents an optional function for WithHealthCheck function.
+// If passed to the WithHealthCheck, will set the config.health.healthChecker.
+func SetHealthChecker(hc hc.HealthChecker) Option[*HealthEndpointConfig] {
+	return func(c *HealthEndpointConfig) {
+		// To not shoot in the leg. There are already a nop checker.
+		if hc == nil {
+			return
 		}
 
-		if cfg.HealthChecker != nil {
-			c.health.HealthChecker = cfg.HealthChecker
+		c.HealthChecker = hc
+	}
+}
+
+// HealthCheckRoute represents an optional function for WithHealthCheck function.
+// If passed to the WithHealthCheck, will set the config.health.route.
+func HealthCheckRoute(route string) Option[*HealthEndpointConfig] {
+	return func(c *HealthEndpointConfig) { c.Route = route }
+}
+
+// HealthCheckAccessLog represents an optional function for WithHealthCheck function.
+// If passed to the WithHealthCheck, will set the config.health.accessLogsEnabled to true.
+func HealthCheckAccessLog(enable bool) Option[*HealthEndpointConfig] {
+	return func(c *HealthEndpointConfig) { c.AccessLogsEnabled = enable }
+}
+
+// HealthCheckMetricsForEndpoint represents an optional function for WithHealthCheck function.
+// If passed to the WithHealthCheck, will set the config.health.metricsForEndpointEnabled to true.
+func HealthCheckMetricsForEndpoint(enable bool) Option[*HealthEndpointConfig] {
+	return func(c *HealthEndpointConfig) { c.MetricsForEndpointEnabled = enable }
+}
+
+// WithMetrics turns on the metrics endpoint.
+// Receives the following option to configure the endpoint:
+// - MetricsRoute - to set the endpoint route.
+// - MetricsAccessLog - to enable access log for endpoint.
+// - MetricsMetricsForEndpoint - to enable metrics collection for endpoint.
+func WithMetrics(options ...Option[*MetricsEndpointConfig]) Option[*config] {
+	return func(c *config) {
+		c.metrics.enable = true
+
+		for _, opt := range options {
+			opt(&c.metrics)
 		}
 	}
+}
+
+// MetricsRoute represents an optional function for WithMetrics function.
+// If passed to the WithMetrics, will set the config.health.route.
+func MetricsRoute(route string) Option[*MetricsEndpointConfig] {
+	return func(c *MetricsEndpointConfig) { c.Route = route }
+}
+
+// MetricsAccessLog represents an optional function for WithMetrics function.
+// If passed to the WithMetrics, will set the config.health.accessLogsEnabled to true.
+func MetricsAccessLog(enable bool) Option[*MetricsEndpointConfig] {
+	return func(c *MetricsEndpointConfig) { c.AccessLogsEnabled = enable }
+}
+
+// MetricsMetricsForEndpoint represents an optional function for WithMetrics function.
+// If passed to the WithMetrics, will set the config.health.metricsForEndpointEnabled to true.
+func MetricsMetricsForEndpoint(enable bool) Option[*MetricsEndpointConfig] {
+	return func(c *MetricsEndpointConfig) { c.MetricsForEndpointEnabled = enable }
 }
 
 // WithProfiler turns on the profiler endpoint.
