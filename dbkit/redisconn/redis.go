@@ -17,10 +17,42 @@ func WithClientName(name string) Option {
 	return func(o *redis.Options) { o.ClientName = name }
 }
 
+func WithCredentials(username, password string) Option {
+	return func(o *redis.Options) {
+		o.Username = username
+		o.Password = password
+	}
+}
+
+func WithCredentialsProvider(provider func() (string, string)) Option {
+	return func(o *redis.Options) { o.CredentialsProvider = provider }
+}
+
 // New returns a pointer to a new instance of Conn struct.
 func New(addr string, options ...Option) (*Conn, error) {
 	connOptions := redis.Options{
-		Addr: addr,
+		Network:               "",
+		Addr:                  addr,
+		ClientName:            "",
+		Dialer:                nil,
+		OnConnect:             nil,
+		DB:                    0,
+		MaxRetries:            0,
+		MinRetryBackoff:       0,
+		MaxRetryBackoff:       0,
+		DialTimeout:           0,
+		ReadTimeout:           0,
+		WriteTimeout:          0,
+		ContextTimeoutEnabled: false,
+		PoolFIFO:              false,
+		PoolSize:              0,
+		PoolTimeout:           0,
+		MinIdleConns:          0,
+		MaxIdleConns:          0,
+		ConnMaxIdleTime:       0,
+		ConnMaxLifetime:       0,
+		TLSConfig:             nil,
+		Limiter:               nil,
 	}
 
 	for _, option := range options {

@@ -316,7 +316,7 @@ type config struct {
 	idleTimeout time.Duration
 
 	// globalMiddlewares holds a set of router-wide middlewares
-	// which alpplies to each endpoint.
+	// which applies to each endpoint.
 	globalMiddlewares []Middleware
 
 	// health holds configuration for health endpoint.

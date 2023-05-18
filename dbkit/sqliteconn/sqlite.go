@@ -5,287 +5,224 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"io"
-	"io/fs"
-	"os"
-	"path"
-	"sort"
+	"path/filepath"
 	"strings"
-
-	"github.com/heartwilltell/log"
 
 	"github.com/heartwilltell/hc"
 	_ "github.com/mattn/go-sqlite3"
 )
 
-// Compilation time check that Conn implements
-// the hc.HealthChecker.
+// Compilation time check that Conn implements the hc.HealthChecker.
 var _ hc.HealthChecker = (*Conn)(nil)
 
+// JournalMode represents SQLite journaling mode.
+// https://www.sqlite.org/pragma.html#pragma_journal_mode
+//
+// Note that the JournalMode for an InMemory database is either Memory or Off
+// and can not be changed to a different value.
+//
+// An attempt to change the JournalMode of an InMemory database to any setting
+// other than Memory or Off is ignored.
+//
+// Note also that the JournalMode cannot be changed while a transaction is active.
+type JournalMode byte
+
 const (
-	schemaVersionTableName   = "schema_version"
-	migrationRollbackDivider = "---- create above / drop below ----"
+	// Delete journaling mode is the normal behavior. In the Delete mode, the rollback
+	// journal is deleted at the conclusion of each transaction. Indeed, the delete
+	// operation is the action that causes the transaction to commit.
+	// See the document titled Atomic Commit In SQLite for additional detail:
+	// https://www.sqlite.org/atomiccommit.html
+	Delete JournalMode = iota
+
+	// Truncate journaling mode commits transactions by truncating the rollback journal to
+	// zero-length instead of deleting it. On many systems, truncating a file is much faster
+	// than deleting the file since the containing directory does not need to be changed.
+	Truncate
+
+	// Persist journaling mode prevents the rollback journal from being deleted at the end of
+	// each transaction. Instead, the header of the journal is overwritten with zeros.
+	// This will prevent other database connections from rolling the journal back.
+	// The Persist journaling mode is useful as an optimization on platforms where deleting or
+	// truncating a file is much more expensive than overwriting the first block of a file with zeros.
+	Persist
+
+	// Memory journaling mode stores the rollback journal in volatile RAM.
+	// This saves disk I/O but at the expense of database safety and integrity.
+	// If the application using SQLite crashes in the middle of a transaction when
+	// the Memory journaling mode is set, then the database file will very likely go corrupt.
+	Memory
+
+	// WAL journaling mode uses a write-ahead log instead of a rollback journal to implement transactions.
+	// The WAL journaling mode is persistent; after being set it stays in effect across multiple database
+	// connections and after closing and reopening the database.
+	// A database in WAL journaling mode can only be accessed by SQLite version 3.7.0 (2010-07-21) or later.
+	WAL
+
+	// Off journaling mode disables the rollback journal completely.
+	// No rollback journal is ever created and hence there is never a rollback journal to delete.
+	// The Off journaling mode disables the atomic commit and rollback capabilities of SQLite.
+	// The ROLLBACK command no longer works; it behaves in an undefined way.
+	// Applications must avoid using the ROLLBACK command when the journal mode is Off.
+	// If the application crashes in the middle of a transaction when the Off journaling mode is set,
+	// then the database file will very likely go corrupt.
+	Off
 )
+
+func (m JournalMode) String() string {
+	modes := map[JournalMode]string{
+		Delete:   "DELETE",
+		Truncate: "TRUNCATE",
+		Persist:  "PERSIST",
+		Memory:   "MEMORY",
+		WAL:      "WAL",
+		Off:      "OFF",
+	}
+
+	return modes[m]
+}
+
+// AccessMode represents SQLite access mode.
+// https://www.sqlite.org/c3ref/open.html
+type AccessMode byte
+
+func (m AccessMode) String() string {
+	modes := map[AccessMode]string{
+		ReadWriteCreate: "rwc",
+		ReadOnly:        "ro",
+		ReadWrite:       "rw",
+		InMemory:        "memory",
+	}
+
+	return modes[m]
+}
+
+const (
+	// ReadWriteCreate is a mode in which the database is opened for reading and writing,
+	// and is created if it does not already exist.
+	ReadWriteCreate AccessMode = iota
+
+	// ReadOnly is a mode in which the database is opened in read-only mode.
+	// If the database does not already exist, an error is returned.
+	ReadOnly
+
+	// ReadWrite is a mode in which database is opened for reading and writing if possible,
+	// or reading only if the file is write protected by the operating system.
+	// In either case the database must already exist, otherwise an error is returned.
+	// For historical reasons, if opening in read-write mode fails due to OS-level permissions,
+	// an attempt is made to open it in read-only mode.
+	ReadWrite
+
+	// InMemory is a mode in which database will be opened as an in-memory database.
+	// The database is named by the "filename" argument for the purposes of cache-sharing,
+	// if shared cache mode is enabled, but the "filename" is otherwise ignored.
+	InMemory
+)
+
+// Option represents an optional functions which configures the ConnOptions.
+type Option func(o *ConnOptions)
+
+// WithAccessMode enables SQLite to use picked access mode.
+func WithAccessMode(mode AccessMode) Option {
+	return func(o *ConnOptions) { o.accessMode = mode }
+}
+
+// WithJournalMode sets SQLite to use picked journal mode.
+func WithJournalMode(mode JournalMode) Option {
+	return func(o *ConnOptions) { o.journalingMode = mode }
+}
+
+// ConnOptions holds a set of options which will be used to
+// establish the connection with SQLite.
+type ConnOptions struct {
+	// path holds an absolute path to the database file.
+	path string
+
+	// journalingMode represents SQLite journaling mode.
+	// https://www.sqlite.org/pragma.html#pragma_journal_mode
+	journalingMode JournalMode
+
+	// accessMode represents SQLite access mode.
+	// https://www.sqlite.org/c3ref/open.html
+	accessMode AccessMode
+}
+
+func (o *ConnOptions) connString() (string, error) {
+	params := make([]string, 0, 2)
+
+	switch o.accessMode {
+	case ReadWriteCreate, InMemory, ReadOnly, ReadWrite:
+		params = append(params, "mode="+o.accessMode.String())
+	default:
+		return "", errors.New("unsupported access mode")
+	}
+
+	switch o.journalingMode {
+	case Delete, Truncate, Persist, WAL, Memory, Off:
+		params = append(params, "_journal="+o.journalingMode.String())
+	default:
+		return "", errors.New("unsupported journal mode")
+	}
+
+	var b strings.Builder
+
+	b.WriteString("file:" + o.path)
+
+	if len(params) > 0 {
+		b.WriteString("?")
+	}
+
+	for i, p := range params {
+		b.WriteString(p)
+
+		if i != len(p)-1 {
+			b.WriteString("&")
+		}
+	}
+
+	return b.String(), nil
+}
 
 // Conn represents connection to SQLite.
 // Wraps the pointer to the standard sql.DB struct.
 type Conn struct{ *sql.DB }
 
 // New returns a pointer to a new instance of Conn with a pointer to sql.DB struct.
-func New(path string) (*Conn, error) {
-	db, openErr := sql.Open("sqlite3", path)
+func New(path string, options ...Option) (*Conn, error) {
+	absPath, absPathErr := filepath.Abs(path)
+	if absPathErr != nil {
+		return nil, fmt.Errorf("sqlite: determite absolute path to the database: %w", absPathErr)
+	}
+
+	connOptions := ConnOptions{
+		path: absPath,
+	}
+
+	for _, option := range options {
+		option(&connOptions)
+	}
+
+	connString, connStringErr := connOptions.connString()
+	if connStringErr != nil {
+		return nil, fmt.Errorf("sqlite: %w", connStringErr)
+	}
+
+	db, openErr := sql.Open("sqlite3", connString)
 	if openErr != nil {
-		return nil, fmt.Errorf("sqlite: failed to open database: %w", openErr)
+		return nil, fmt.Errorf("sqlite: open database: %w", openErr)
 	}
 
 	if err := db.Ping(); err != nil {
-		return nil, fmt.Errorf("sqlite: failed to connect to database: %w", err)
+		return nil, fmt.Errorf("sqlite: connect to database: %w", err)
 	}
 
-	return &Conn{db}, nil
+	return &Conn{DB: db}, nil
 }
 
 // Health implements hc.HealthChecker interface.
 func (c *Conn) Health(ctx context.Context) error {
 	if err := c.PingContext(ctx); err != nil {
-		return fmt.Errorf("sqlite: health check failed: %w", err)
-	}
-
-	return nil
-}
-
-// MigrationOption
-type MigrationOption func(m *Migrator)
-
-// MigrateWithBackup sets whether backup of the database enabled
-func MigrateWithBackup(databasePath string) MigrationOption {
-	return func(m *Migrator) {
-		m.backupEnabled = true
-		m.databasePath = databasePath
-	}
-}
-
-// MigrateWithLogger sets the Migrator logger.
-func MigrateWithLogger(logger log.Logger) MigrationOption {
-	return func(m *Migrator) { m.log = logger }
-}
-
-func MigrateWithMigrationPath(migrationsPath string) MigrationOption {
-	return func(m *Migrator) { m.migrationsPath = migrationsPath }
-}
-
-// Migration represents a database migration.
-type Migration struct {
-	Number   uint
-	Up, Down string
-}
-
-// Migrator loads and applies database migrations to SQLite.
-type Migrator struct {
-	log log.Logger
-
-	// migrations holds a filesystem with migration files.
-	migrations fs.FS
-
-	// migrationsPath holds path to the folder with migrations.
-	migrationsPath string
-
-	// databasePath holds a path to the SQLite database file.
-	databasePath string
-
-	// versionTableName holds the name of the schema version table.
-	versionTableName string
-
-	// backupEnabled shows whether backup of the database is enabled.
-	backupEnabled bool
-}
-
-// Migrations returns a pointer to a new instance of Migrator.
-func Migrations(migrations fs.FS, options ...MigrationOption) *Migrator {
-	m := Migrator{
-		log:              log.NewNopLog(),
-		migrations:       migrations,
-		migrationsPath:   ".",
-		databasePath:     ".",
-		versionTableName: schemaVersionTableName,
-		backupEnabled:    false,
-	}
-
-	for _, option := range options {
-		option(&m)
-	}
-
-	return &m
-}
-
-func (m *Migrator) Migrate(ctx context.Context, conn *Conn) error {
-	migrations, loadErr := m.loadMigrations()
-	if loadErr != nil {
-		return loadErr
-	}
-
-	m.log.Info("Starting migration process")
-
-	if m.backupEnabled {
-		m.log.Info("Creating database backup")
-
-		if err := m.backup(); err != nil {
-			return fmt.Errorf("failed to create database backup: %w", err)
-		}
-
-		m.log.Info("Database backup has been created")
-	}
-
-	m.log.Info("Migrating")
-
-	if err := m.migrate(ctx, conn, migrations); err != nil {
-		m.log.Error("Migration failed: %s", err.Error())
-
-		if m.backupEnabled {
-			m.log.Info("Removing broken database file '%s'", m.databasePath)
-
-			if removeErr := os.Remove(m.databasePath); removeErr != nil {
-				return errors.Join(err, fmt.Errorf("failed to delete broken database file: %w", removeErr))
-			}
-
-			dir, file := path.Split(m.databasePath)
-
-			if renameErr := os.Rename(path.Join(dir, fmt.Sprintf("backup-%s", file)), m.databasePath); renameErr != nil {
-				return errors.Join(err, fmt.Errorf("failed to rename backup file: %w", renameErr))
-			}
-		}
-
-		return err
-	}
-
-	m.log.Info("Migration complete")
-
-	if m.backupEnabled {
-		m.log.Info("Removing backup")
-
-		dir, file := path.Split(m.databasePath)
-
-		if err := os.Remove(path.Join(dir, fmt.Sprintf("backup-%s", file))); err != nil {
-			return errors.Join(err, fmt.Errorf("failed to rename backupEnabled file: %w", err))
-		}
-	}
-
-	return nil
-}
-
-func (m *Migrator) migrate(ctx context.Context, conn *Conn, migrations []Migration) (mErr error) {
-	if err := conn.PingContext(ctx); err != nil {
-		return fmt.Errorf("failed to connect to database: %w", err)
-	}
-
-	tx, txErr := conn.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
-	if txErr != nil {
-		return fmt.Errorf("failed to begin transaction: %w", txErr)
-	}
-	defer func() {
-		if err := tx.Rollback(); err != nil && !errors.Is(err, sql.ErrTxDone) {
-			mErr = errors.Join(mErr, fmt.Errorf("failed to rollback transaction: %w", err))
-		}
-	}()
-
-	for _, migration := range migrations {
-		if _, err := tx.ExecContext(ctx, migration.Up); err != nil {
-			return fmt.Errorf("failed to apply migration: %w", err)
-		}
-	}
-
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("failed to commit transaction: %w", err)
-	}
-
-	return nil
-}
-
-func (m *Migrator) loadMigrations() ([]Migration, error) {
-	entries, readErr := fs.ReadDir(m.migrations, m.migrationsPath)
-	if readErr != nil {
-		return nil, fmt.Errorf("sqlite: failed to load migrations: %w", readErr)
-	}
-
-	sort.Slice(entries, func(i, j int) bool {
-		return entries[i].Name() < entries[j].Name()
-	})
-
-	migrations := make([]Migration, 0, len(entries))
-
-	for i, entry := range entries {
-		info, infoErr := entry.Info()
-		if infoErr != nil {
-			return nil, fmt.Errorf("sqlite: failed to get file info: %w", infoErr)
-		}
-
-		if strings.HasSuffix(info.Name(), ".sql") {
-			m.log.Info("Loading '%s'", info.Name())
-
-			migration, readFileErr := fs.ReadFile(m.migrations, info.Name())
-			if readFileErr != nil {
-				return nil, fmt.Errorf("sqlite: failed to load migration file '%s': %w", info.Name(), readFileErr)
-			}
-
-			parts := strings.SplitN(string(migration), migrationRollbackDivider, 2)
-			if len(parts) != 2 {
-				return nil, fmt.Errorf("sqlite: invalid migration file '%s': divider '%s' is absent", info.Name(), migrationRollbackDivider)
-			}
-
-			migrations = append(migrations, Migration{
-				Number: func() uint {
-					if i == 0 {
-						return uint(i + 1)
-					}
-
-					return uint(i)
-				}(),
-				Up:   strings.TrimSpace(parts[0]),
-				Down: strings.TrimSpace(parts[1]),
-			})
-		}
-
-		m.log.Info("Loading finished")
-	}
-
-	return migrations, nil
-}
-
-func (m *Migrator) backup() (bErr error) {
-	stat, statErr := os.Stat(m.databasePath)
-	if statErr != nil {
-		return fmt.Errorf("failed to get file information: %w", statErr)
-	}
-
-	if stat.IsDir() {
-		return fmt.Errorf("given path is a directory istead of file: %s", m.databasePath)
-	}
-
-	srcDir, _ := path.Split(m.databasePath)
-
-	src, srcOpenErr := os.Open(m.databasePath)
-	if srcOpenErr != nil {
-		return fmt.Errorf("failed to open database file: %w", srcOpenErr)
-	}
-	defer func() {
-		if err := src.Close(); err != nil {
-			bErr = errors.Join(bErr, fmt.Errorf("failed to close database source file: %w", err))
-		}
-	}()
-
-	dst, dstOpenErr := os.Create(path.Join(srcDir, fmt.Sprintf("backup-%s", stat.Name())))
-	if dstOpenErr != nil {
-		return fmt.Errorf("failed to create database backup file: %w", dstOpenErr)
-	}
-
-	defer func() {
-		if err := dst.Close(); err != nil {
-			bErr = errors.Join(bErr, fmt.Errorf("failed to close database backup file: %w", err))
-		}
-	}()
-
-	if _, err := io.Copy(dst, src); err != nil {
-		return fmt.Errorf("failed to write backup file: %w", err)
+		return fmt.Errorf("sqlite: health check: %w", err)
 	}
 
 	return nil
