@@ -7,6 +7,7 @@ import (
 
 	"github.com/VictoriaMetrics/metrics"
 	"github.com/heartwilltell/bones/ctxkit"
+	"github.com/heartwilltell/bones/errkit"
 	"github.com/heartwilltell/log"
 )
 
@@ -17,7 +18,9 @@ func RecoveryMiddleware(log log.Logger) Middleware {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			defer func() {
 				if recovery := recover(); recovery != nil && isAbortHandlerError(recovery) {
-					log.Error("Recovered form PANIC: %v", recovery)
+					panicErr := recoveryValueToError(recovery)
+
+					log.Error("Recovered form PANIC: %s", panicErr)
 
 					if hook := ctxkit.GetLogErrHook(r.Context()); hook != nil {
 						hook(recoveryValueToError(recovery))
@@ -25,6 +28,8 @@ func RecoveryMiddleware(log log.Logger) Middleware {
 
 					m := fmt.Sprintf(`server_panics_total{method="%s", route="%s"}`, r.Method, r.URL.Path)
 					metrics.GetOrCreateCounter(m).Inc()
+
+					errkit.Report(panicErr)
 
 					w.WriteHeader(http.StatusInternalServerError)
 				}
@@ -50,5 +55,5 @@ func recoveryValueToError(recovery any) error {
 		return recoveryErr
 	}
 
-	return nil
+	return fmt.Errorf("recover value: %+v", recovery)
 }

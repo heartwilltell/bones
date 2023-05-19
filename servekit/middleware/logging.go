@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/heartwilltell/bones/ctxkit"
+	"github.com/heartwilltell/bones/errkit"
 	"github.com/heartwilltell/log"
 )
 
@@ -30,6 +31,9 @@ func LoggingMiddleware(log log.Logger) Middleware {
 			if status >= http.StatusBadRequest {
 				if hookedError != nil {
 					log.Error(errFormat, r.Method, status, r.RequestURI, r.RemoteAddr, time.Since(start).String(), rid, hookedError)
+
+					errkit.Report(hookedError)
+
 					return
 				}
 
