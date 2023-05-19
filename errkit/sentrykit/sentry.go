@@ -47,7 +47,7 @@ func WithStacktrace(enabled bool) Option {
 	return func(o *sentry.ClientOptions) { o.AttachStacktrace = enabled }
 }
 
-func WithStacktraceSampleRate(rate float64) Option {
+func WithSampleRate(rate float64) Option {
 	return func(o *sentry.ClientOptions) { o.SampleRate = rate }
 }
 
@@ -65,9 +65,7 @@ func Init(dsn string, options ...Option) error {
 			Dsn:              dsn,
 			Debug:            false,
 			AttachStacktrace: false,
-			SampleRate:       0,
 			EnableTracing:    false,
-			TracesSampleRate: 0,
 		}
 
 		for _, option := range options {
