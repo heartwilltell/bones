@@ -10,7 +10,7 @@ import (
 	"github.com/heartwilltell/log"
 )
 
-// RecoveryMiddleware represents middleware which catches and recovers from panics
+// RecoveryMiddleware represents middleware which catches and recovers from panics.
 // Returns the HTTP 500 (Internal Server Error) status if possible.
 func RecoveryMiddleware(log log.Logger) Middleware {
 	return func(next http.Handler) http.Handler {

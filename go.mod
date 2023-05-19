@@ -3,7 +3,8 @@ module github.com/heartwilltell/bones
 go 1.18
 
 require (
-	github.com/VictoriaMetrics/metrics v1.23.1
+	github.com/VictoriaMetrics/metrics v1.24.0
+	github.com/getsentry/sentry-go v0.21.0
 	github.com/go-chi/chi/v5 v5.0.8
 	github.com/heartwilltell/hc v0.1.5
 	github.com/heartwilltell/log v1.1.3
@@ -14,11 +15,11 @@ require (
 	github.com/maxatome/go-testdeep v1.12.0
 	github.com/nats-io/nats.go v1.25.0
 	github.com/oklog/ulid/v2 v2.1.0
-	github.com/rs/xid v1.4.0
+	github.com/rs/xid v1.5.0
 	github.com/valyala/fastrand v1.1.0
-	go.mongodb.org/mongo-driver v1.11.3
+	go.mongodb.org/mongo-driver v1.11.6
 	go.uber.org/multierr v1.11.0
-	golang.org/x/sync v0.1.0
+	golang.org/x/sync v0.2.0
 )
 
 require (
@@ -27,9 +28,9 @@ require (
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
-	github.com/klauspost/compress v1.16.3 // indirect
+	github.com/klauspost/compress v1.16.5 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
-	github.com/montanaflynn/stats v0.7.0 // indirect
+	github.com/montanaflynn/stats v0.7.1 // indirect
 	github.com/nats-io/nats-server/v2 v2.9.15 // indirect
 	github.com/nats-io/nkeys v0.4.4 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
@@ -39,7 +40,7 @@ require (
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20201027041543-1326539a0a0a // indirect
-	golang.org/x/sys v0.6.0 // indirect
+	golang.org/x/sys v0.8.0 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
 )
 
@@ -60,8 +61,8 @@ require (
 	github.com/jackc/puddle v1.3.0 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
-	github.com/redis/go-redis/v9 v9.0.3
+	github.com/redis/go-redis/v9 v9.0.4
 	github.com/valyala/histogram v1.2.0 // indirect
-	golang.org/x/crypto v0.7.0 // indirect
-	golang.org/x/text v0.8.0 // indirect
+	golang.org/x/crypto v0.9.0 // indirect
+	golang.org/x/text v0.9.0 // indirect
 )

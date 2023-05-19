@@ -77,6 +77,7 @@ func Error(w http.ResponseWriter, r *http.Request, err error) {
 	if hook := ctxkit.GetLogErrHook(r.Context()); hook != nil {
 		hook(err)
 	}
+
 	// Call the default error responder.
 	errResponder(w, err)
 }
