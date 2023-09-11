@@ -27,4 +27,10 @@ func RegisterReporter(r ErrorReporter) error {
 	return nil
 }
 
-func Report(err error) { reporter.Report(err) }
+func Report(err error) {
+	if reporter == nil {
+		return
+	}
+
+	reporter.Report(err)
+}

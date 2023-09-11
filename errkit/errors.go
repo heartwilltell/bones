@@ -4,13 +4,10 @@ package errkit
 var _ error = (Error)("")
 
 const (
-	// ErrUnknown indicates an unknown error.
-	ErrUnknown Error = "unknown error"
-
 	// ErrInvalidArgument indicates that client has specified an invalid argument.
 	ErrInvalidArgument Error = "invalid argument"
 
-	// ErrNotFound indicates that requested entity was not found.
+	// ErrNotFound indicates that requested entity can not be found.
 	ErrNotFound Error = "not found"
 
 	// ErrAlreadyExists indicates an attempt to create an entity

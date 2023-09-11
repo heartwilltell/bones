@@ -9,8 +9,8 @@ import (
 	"github.com/heartwilltell/bones/errkit"
 	"github.com/heartwilltell/hc"
 	"github.com/jackc/pgconn"
-	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/multierr"
 )
 
@@ -32,7 +32,7 @@ func New(connstr string) (*Conn, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	pgConn, connErr := pgxpool.ConnectConfig(ctx, config)
+	pgConn, connErr := pgxpool.NewWithConfig(ctx, config)
 	if connErr != nil {
 		return nil, fmt.Errorf("postgres: %w: %s", errkit.ErrConnFailed, connErr.Error())
 	}

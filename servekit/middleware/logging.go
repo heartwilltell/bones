@@ -12,7 +12,7 @@ import (
 
 // LoggingMiddleware represents logging middleware.
 func LoggingMiddleware(log log.Logger) Middleware {
-	format := "%s %d %s Remote: %s %s Request ID: %s"
+	format := "%s %d %s Remote: %s %s"
 	errFormat := format + " Error: %s"
 
 	return func(next http.Handler) http.Handler {
@@ -22,7 +22,6 @@ func LoggingMiddleware(log log.Logger) Middleware {
 			var hookedError error
 
 			ctx := ctxkit.SetLogErrHook(r.Context(), func(err error) { hookedError = err })
-			rid := ctxkit.GetRequestID(ctx)
 
 			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
 			next.ServeHTTP(ww, r.WithContext(ctx))
@@ -30,16 +29,15 @@ func LoggingMiddleware(log log.Logger) Middleware {
 
 			if status >= http.StatusBadRequest {
 				if hookedError != nil {
-					log.Error(errFormat, r.Method, status, r.RequestURI, r.RemoteAddr, time.Since(start).String(), rid, hookedError)
+					log.Error(errFormat, r.Method, status, r.RequestURI, r.RemoteAddr, time.Since(start).String(), hookedError)
 
 					errkit.Report(hookedError)
-
 					return
 				}
 
-				log.Error(format, r.Method, status, r.RequestURI, r.RemoteAddr, time.Since(start).String(), rid)
+				log.Error(format, r.Method, status, r.RequestURI, r.RemoteAddr, time.Since(start).String())
 			} else {
-				log.Info(format, r.Method, status, r.RequestURI, r.RemoteAddr, time.Since(start).String(), rid)
+				log.Info(format, r.Method, status, r.RequestURI, r.RemoteAddr, time.Since(start).String())
 			}
 		}
 

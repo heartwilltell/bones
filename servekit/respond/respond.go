@@ -47,11 +47,6 @@ var (
 			return
 		}
 
-		if errors.Is(err, errkit.ErrUnknown) {
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-			return
-		}
-
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 	}
 )

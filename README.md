@@ -18,7 +18,7 @@
 - [`idkit`](idkit/id.go) - Holds a set of functions which generates and validates different kind of identifiers.
 - `dbkit` - Holds database related utils and wrappers.
     - [`pgconn`](dbkit/pgconn/postgres.go) - Tiny wrapper around `github.com/jackc/pgx/v4` to work with Postgres.
-    - [`pgmigrate`](dbkit/pgconn/migrate/migrator.go) - Tiny wrapper around `github.com/jackc/tern` to work with database schema migrations.
+    - [`pgmigrate`](dbkit/pgconn/pgmigrate/migrator.go) - Tiny wrapper around `github.com/jackc/tern` to work with database schema migrations.
 
 ## On the shoulders of giants
 - [github.com/VictoriaMetrics/metric](https://github.com/VictoriaMetrics/metrics)

@@ -107,7 +107,7 @@ const (
 	ReadOnly
 
 	// ReadWrite is a mode in which database is opened for reading and writing if possible,
-	// or reading only if the file is write protected by the operating system.
+	// or reading only if the file is write-protected by the operating system.
 	// In either case the database must already exist, otherwise an error is returned.
 	// For historical reasons, if opening in read-write mode fails due to OS-level permissions,
 	// an attempt is made to open it in read-only mode.
